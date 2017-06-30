@@ -1,0 +1,2 @@
+include ./easydaq/*.ui
+include ./Makefile
