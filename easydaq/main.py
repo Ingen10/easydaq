@@ -11,9 +11,7 @@ import serial
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
-from matplotlib.figure import Figure
+import matplotlib
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 from opendaq.daq import *
@@ -53,18 +51,16 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.setupUi(self)
         self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.cfg = QtCore.QSettings('opendaq')
-        self.X = [[], [], [], []]
-        self.Y = [[], [], [], []]
-        self.ch_pos = [1, 1, 1, 1]
-        self.ch_neg = [0, 0, 0, 0]
-        self.range = [0, 0, 0, 0]
-        self.rate = [100, 100, 100, 100]
-        self.samples = [20, 20, 20, 20]
-        self.mode = [True, True, True, True]
-        self.modeSE = [0, 0, 0, 0]
-        self.num_points = [0, 0, 0, 0]
+        self.ch_pos = [1, 1, 1]
+        self.ch_neg = [0, 0, 0]
+        self.range = [0, 0, 0]
+        self.rate = [100, 100, 100]
+        self.samples = [20, 20, 20]
+        self.mode = [True, True, True]
+        self.modeSE = [0, 0, 0]
+        self.num_points = [0, 0, 0]
         self.experiments = [0, 0, 0, 0]
-        self.color_curve = ['#ff0000', '#55aa00', '#0000ff', '#e3e300']
+        self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
         port_opendaq = str(self.cfg.value('port').toString())
         self.wave_mode = 0
         self.wave_period = 15
@@ -76,14 +72,13 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.daq = DAQ(port_opendaq)
         except:
             port_opendaq = ''
-            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bconfigure5, self.Bplay]:
+            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
                 p.setEnabled(False)
         self.toolBar.actionTriggered.connect(self.GetPort)
         self.Bconfigure1.clicked.connect(lambda: self.configureChart(0))
         self.Bconfigure2.clicked.connect(lambda: self.configureChart(1))
         self.Bconfigure3.clicked.connect(lambda: self.configureChart(2))
-        self.Bconfigure4.clicked.connect(lambda: self.configureChart(3))
-        self.Bconfigure5.clicked.connect(self.Configurewave)
+        self.Bconfigure4.clicked.connect(self.Configurewave)
         self.Bplay.clicked.connect(self.plot)
         self.Bstop.clicked.connect(self.stop)
         try:
@@ -100,8 +95,10 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.plotWidget.canvas.ax.grid(True)
         self.X = [[], [], [], []]
         self.Y = [[], [], [], []]
+        self.time = [0, 0, 0]
+        self.voltage = [0, 0, 0]
         self.experiments = [0, 0, 0, 0]
-        for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]):
+        for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
             if p.isChecked():
                 if self.modeSE[i]:
                     self.experiments[i] = self.daq.create_external(mode=ExpMode.ANALOG_IN, clock_input=i+1, edge=0, npoints=self.num_points[i], continuous=self.mode[i])
@@ -109,15 +106,28 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=self.rate[i], npoints=self.num_points[i], continuous=self.mode[i])
                 self.experiments[i].analog_setup(pinput=self.ch_pos[i], ninput=self.ch_neg[i], gain=self.range[i], nsamples=self.samples[i])
 
-        if self.cBenable5.isChecked():
+        if self.cBenable4.isChecked():
             self.Waves()
             self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer))
-            self.experiments[3].load_signal(self.buffer)
-            print(len(self.buffer))
-        self.daq.start()
+            # Cut signal buffer into x length buffers
+
+            x_length = 20
+            num_buffers = len(self.buffer) / x_length
+            for i in range(num_buffers):
+                self.init = i * x_length
+                self.end = self.init + x_length
+                self.inter_buffer = self.buffer[self.init:self.end]
+                print(self.inter_buffer)
+                self.experiments[3].load_signal(self.inter_buffer, self.init)
+            self.init = num_buffers * x_length
+            self.inter_buffer = self.buffer[self.init:]
+            if len(self.inter_buffer) > 0:
+                self.experiments[3].load_signal(self.inter_buffer, self.init)
+        #  self.daq.start()
         self.update()
 
     def update(self):
+        self.daq.start()
         for i in range(4):
             if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
                 new_data = self.experiments[i].read()
@@ -131,8 +141,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if self.Bplay.isChecked():
             timer = QtCore.QTimer()
             timer.timeout.connect(self.update)
-            timer.start(0.5)
-            QtCore.QTimer.singleShot(500, self.update)
+            timer.start(self.wave_period/1000.0)
+            QtCore.QTimer.singleShot(self.wave_period, self.update)
 
     def Configurewave(self):
         dlg = Configure_Wave(self)
@@ -152,7 +162,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             for i in range(points_up):
                 self.buffer.append(self.wave_amplitude/2.0 + self.wave_offset)
             for v in range(points_down):
-                self.buffer.append(-(self.wave_amplitude/2.0 + self.wave_offset))
+                self.buffer.append(-(self.wave_amplitude/2.0) + self.wave_offset)
         #  Triangle
         elif self.wave_mode == 1:
             if self.wave_period < 140:
@@ -207,7 +217,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
         if len(self.buffer) >= 140:
             self.buffer = self.buffer[:140]
-        print(self.buffer)
 
     def configureChart(self, i):
         dlg = Configure_chart(self.daq)
@@ -232,11 +241,11 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if port_opendaq != '':
             self.cfg.setValue('port', port_opendaq)
             self.daq = DAQ(str(port_opendaq))
-            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bconfigure5, self.Bplay]:
+            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
                 p.setEnabled(True)
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
         else:
-            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bconfigure5, self.Bplay]:
+            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
                 p.setEnabled(False)
             self.statusBar.showMessage("")
 
