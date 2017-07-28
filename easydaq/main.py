@@ -51,6 +51,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.setupUi(self)
         self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.cfg = QtCore.QSettings('opendaq')
+        #  Experiments
         self.ch_pos = [1, 1, 1]
         self.ch_neg = [0, 0, 0]
         self.range = [0, 0, 0]
@@ -62,12 +63,14 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.experiments = [0, 0, 0, 0]
         self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
         port_opendaq = str(self.cfg.value('port').toString())
+        #  Wave
         self.wave_mode = 0
         self.wave_period = 15
         self.wave_offset = 1
         self.wave_amplitude = 1
         self.wave_timeon = 0
         self.wave_risetime = 0
+        self.buffer = []
         try:
             self.daq = DAQ(port_opendaq)
         except:
@@ -79,7 +82,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.Bconfigure2.clicked.connect(lambda: self.configureChart(1))
         self.Bconfigure3.clicked.connect(lambda: self.configureChart(2))
         self.Bconfigure4.clicked.connect(self.Configurewave)
-        self.Bplay.clicked.connect(self.plot)
+        self.Bplay.clicked.connect(self.play)
         self.Bstop.clicked.connect(self.stop)
         try:
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
@@ -88,16 +91,93 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def stop(self):
         self.daq.stop(clear=True)
+        for i in range(3):
+            self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
+        self.daq.flush()
+        self.daq.clear_experiments()
 
-    def plot(self):
+    def play(self):
         self.daq.stop(clear=True)
         self.plotWidget.canvas.ax.cla()
         self.plotWidget.canvas.ax.grid(True)
-        self.X = [[], [], [], []]
-        self.Y = [[], [], [], []]
-        self.time = [0, 0, 0]
-        self.voltage = [0, 0, 0]
+        self.X = [[], [], []]
+        self.Y = [[], [], []]
+        self.buffer = []
         self.experiments = [0, 0, 0, 0]
+        self.get_buffer()
+        print(self.buffer)
+        self.conf_experiments()
+        self.update()
+
+    def get_buffer(self):
+        #  Square
+        if self.wave_mode == 0:
+            self.interval = fractions.gcd(self.wave_period, self.wave_timeon)
+            points = self.wave_period / self.interval
+            if points > 60:
+                self.interval = self.wave_period / 60.0
+            print(self.interval)
+            points_up = int(self.wave_timeon / self.interval)
+            points_down = int(self.wave_period / self.interval) - points_up
+            print(points_up, points_down)
+            for i in range(points_up):
+                self.buffer.append(self.wave_amplitude/2.0 + self.wave_offset)
+            for v in range(points_down):
+                self.buffer.append(-(self.wave_amplitude/2.0) + self.wave_offset)
+
+        elif self.wave_mode == 1:
+            if self.wave_period < 60:
+                self.interval = 1
+                points_up = int(self.wave_risetime)
+                points_down = int(self.wave_period - points_up)
+                increment = float(self.wave_amplitude) / float(self.wave_risetime)
+            else:
+                points_up = int(60 * self.wave_risetime / self.wave_period)
+                if points_up == 0:
+                    points_up = 1
+                points_down = 60 - points_up
+                self.interval = int(self.wave_risetime / points_up) + 1
+                points_up = int(self.wave_risetime / self.interval)
+                if points_up == 0:
+                    points_up = 1
+                increment = float(self.wave_amplitude) / float(points_up)
+            for i in range(points_up):
+                self.buffer.append(round((self.wave_offset + increment * i), 2))
+            if self.wave_period >= 60:
+                self.interval = int((self.wave_period - self.wave_risetime) / points_down) + 1
+                points_down = int((self.wave_period - self.wave_risetime) / self.interval)
+            increment = float(self.wave_amplitude) / float(points_down)
+            init = self.wave_offset + self.wave_amplitude
+            print(increment)
+            for i in range(points_down):
+                self.buffer.append(round((init - increment * i), 2))
+        #  Sine
+        elif self.wave_mode == 2:
+            self.interval = 1 if self.wave_period < 60 else (self.wave_period/60 + 1)
+            t = np.arange(0, self.wave_period, self.interval)
+            self.buffer = np.sin(2 * np.pi / self.wave_period * t) * (self.wave_amplitude)
+            for i, v in enumerate(self.buffer):
+                self.buffer[i] = v + self.wave_offset
+        #  Sawtooth
+        elif self.wave_mode == 3:
+            if self.wave_period < 60:
+                self.interval = 1
+                points = int(self.wave_period)
+                increment = float(self.wave_amplitude) / float(points)
+            else:
+                self.interval = int(self.wave_period / 60) + 1
+                points = int(self.wave_period / self.interval)
+                if points == 0:
+                    points = 1
+                increment = float(self.wave_amplitude) / float(points)
+            for i in range(points):
+                self.buffer.append(self.wave_offset + increment * i)
+        #  Fixed potential
+        elif self.wave_mode == 4:
+            self.interval = self.wave_period
+            self.buffer.append(self.wave_offset)
+
+    def conf_experiments(self):
         for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
             if p.isChecked():
                 if self.modeSE[i]:
@@ -105,53 +185,41 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 else:
                     self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=self.rate[i], npoints=self.num_points[i], continuous=self.mode[i])
                 self.experiments[i].analog_setup(pinput=self.ch_pos[i], ninput=self.ch_neg[i], gain=self.range[i], nsamples=self.samples[i])
-
         if self.cBenable4.isChecked():
-            self.Waves()
-            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer))
-            # Cut signal buffer into x length buffers
-
-            x_length = 20
-            num_buffers = len(self.buffer) / x_length
-            for i in range(num_buffers):
-                self.init = i * x_length
-                self.end = self.init + x_length
-                self.inter_buffer = self.buffer[self.init:self.end]
-                print(self.inter_buffer)
-                self.experiments[3].load_signal(self.inter_buffer, self.init)
-            self.init = num_buffers * x_length
-            self.inter_buffer = self.buffer[self.init:]
-            if len(self.inter_buffer) > 0:
-                self.experiments[3].load_signal(self.inter_buffer, self.init)
-        #  self.daq.start()
-        self.update()
+            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
+            self.experiments[3].load_signal(self.buffer)
 
     def update(self):
         self.daq.start()
+        self.plot()
+        if self.Bplay.isChecked():
+            timer = QtCore.QTimer()
+            timer.timeout.connect(self.update)
+            timer.start(0.1)
+            QtCore.QTimer.singleShot(100, self.update)
+
+    def plot(self):
         for i in range(4):
             if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
                 new_data = self.experiments[i].read()
                 for d in new_data:
+                    print(d)
                     self.time = self.rate[i]/1000.0*len(self.Y[i])
                     self.X[i].append(self.time)
                     self.Y[i].append(float(d))
                 self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
                 self.plotWidget.canvas.draw()
 
-        if self.Bplay.isChecked():
-            timer = QtCore.QTimer()
-            timer.timeout.connect(self.update)
-            timer.start(self.wave_period/1000.0)
-            QtCore.QTimer.singleShot(self.wave_period, self.update)
-
     def Configurewave(self):
         dlg = Configure_Wave(self)
         if dlg.exec_():
             self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave()
             print(self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime)
+        self.Waves()
 
     def Waves(self):
         self.buffer = []
+        self.inter_buffer = []
         #  Square
         if self.wave_mode == 0:
             self.interval = fractions.gcd(self.wave_period, self.wave_timeon)
@@ -182,14 +250,14 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     points_up = 1
                 increment = self.wave_amplitude / points_up
             for i in range(points_up):
-                self.buffer.append(round((self.wave_offset + increment * i),2))
+                self.buffer.append(round((self.wave_offset + increment * i), 2))
             if self.wave_period >= 140:
                 self.interval = int((self.wave_period - self.wave_risetime) / points_down) + 1
                 points_down = int((self.wave_period - self.wave_risetime) / self.interval)
             increment = self.wave_amplitude / points_down
             init = self.wave_offset + self.wave_amplitude
             for i in range(points_down):
-                self.buffer.append(round((init - increment*i),2))
+                self.buffer.append(round((init - increment * i), 2))
         #  Sine
         elif self.wave_mode == 2:
             self.interval = 1 if self.wave_period < 140 else (self.wave_period/140 + 1)
@@ -213,10 +281,11 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.buffer.append(self.wave_offset + increment * i)
         #  Fixed potential
         elif self.wave_mode == 4:
+            self.interval = self.wave_period
             self.buffer.append(self.wave_offset)
 
-        if len(self.buffer) >= 140:
-            self.buffer = self.buffer[:140]
+        #if len(self.buffer) >= 140:
+        #    self.buffer = self.buffer[:140]
 
     def configureChart(self, i):
         dlg = Configure_chart(self.daq)
