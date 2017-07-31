@@ -64,7 +64,7 @@ class Ui_MainWindow(object):
         self.sBrate.setMinimumSize(QtCore.QSize(110, 27))
         self.sBrate.setMinimum(1)
         self.sBrate.setMaximum(65536)
-        self.sBrate.setProperty("value", 100)
+        self.sBrate.setProperty("value", 10)
         self.sBrate.setObjectName(_fromUtf8("sBrate"))
         self.gridLayout.addWidget(self.sBrate, 0, 3, 1, 1)
         self.label_3 = QtGui.QLabel(MainWindow)

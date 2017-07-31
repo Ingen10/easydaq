@@ -163,7 +163,7 @@ class Ui_MainWindow(object):
         self.sBtimeon.setMinimum(0.0)
         self.sBtimeon.setMaximum(65536.0)
         self.sBtimeon.setSingleStep(1.0)
-        self.sBtimeon.setProperty("value", 20.0)
+        self.sBtimeon.setProperty("value", 40.0)
         self.sBtimeon.setObjectName(_fromUtf8("sBtimeon"))
         self.stackedWidget_2.addWidget(self.page_3)
         self.page_4 = QtGui.QWidget()

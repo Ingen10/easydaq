@@ -55,7 +55,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.ch_pos = [1, 1, 1]
         self.ch_neg = [0, 0, 0]
         self.range = [0, 0, 0]
-        self.rate = [100, 100, 100]
+        self.rate = [10, 10, 10]
         self.samples = [20, 20, 20]
         self.mode = [True, True, True]
         self.modeSE = [0, 0, 0]
@@ -65,14 +65,16 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         port_opendaq = str(self.cfg.value('port').toString())
         #  Wave
         self.wave_mode = 0
-        self.wave_period = 15
-        self.wave_offset = 1
+        self.wave_period = 100
+        self.wave_offset = 0
         self.wave_amplitude = 1
-        self.wave_timeon = 0
-        self.wave_risetime = 0
+        self.wave_timeon = 40
+        self.wave_risetime = 40
         self.buffer = []
+        self.inter_buffer = []
         try:
             self.daq = DAQ(port_opendaq)
+            self.model = DAQModel.new(*self.daq.get_info()) 
         except:
             port_opendaq = ''
             for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
@@ -90,19 +92,21 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             pass
 
     def stop(self):
-        self.daq.stop(clear=True)
         for i in range(3):
             self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
-        self.daq.flush()
-        self.daq.clear_experiments()
+        self.daq.stop()
+        
+        #self.daq.clear_experiments()
 
     def play(self):
         self.daq.stop(clear=True)
+        #self.daq.flush()
         self.plotWidget.canvas.ax.cla()
         self.plotWidget.canvas.ax.grid(True)
         self.X = [[], [], []]
         self.Y = [[], [], []]
         self.buffer = []
+        self.inter_buffer = []
         self.experiments = [0, 0, 0, 0]
         self.get_buffer()
         print(self.buffer)
@@ -188,7 +192,22 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if self.cBenable4.isChecked():
             self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
             self.experiments[3].load_signal(self.buffer)
-
+            '''
+            x_length = 20
+            num_buff = len(self.buffer) / x_length
+            for i in range(num_buff):
+                init = i*x_length
+                end = init + x_length
+                self.inter_buffer = self.buffer[init:end]
+                print(self.inter_buffer)
+                self.experiments[3].load_signal(self.inter_buffer, init)
+            init = num_buff * x_length
+            self.inter_buffer = self.buffer[init:]
+            if len(self.inter_buffer) > 0:
+                self.experiments[3].load_signal(self.inter_buffer, init)
+            '''
+            
+        
     def update(self):
         self.daq.start()
         self.plot()
@@ -215,80 +234,9 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if dlg.exec_():
             self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave()
             print(self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime)
-        self.Waves()
-
-    def Waves(self):
-        self.buffer = []
-        self.inter_buffer = []
-        #  Square
-        if self.wave_mode == 0:
-            self.interval = fractions.gcd(self.wave_period, self.wave_timeon)
-            print(self.interval)
-            points_up = int(self.wave_timeon / self.interval)
-            points_down = int(self.wave_period / self.interval) - points_up
-            print(points_up, points_down)
-            for i in range(points_up):
-                self.buffer.append(self.wave_amplitude/2.0 + self.wave_offset)
-            for v in range(points_down):
-                self.buffer.append(-(self.wave_amplitude/2.0) + self.wave_offset)
-        #  Triangle
-        elif self.wave_mode == 1:
-            if self.wave_period < 140:
-                self.interval = 1
-                points_up = int(self.wave_risetime)
-                points_down = int(self.wave_period - points_up)
-                increment = self.wave_amplitude / self.wave_risetime
-            else:
-                #  Ideal number points
-                points_up = int(140 / (self.wave_period / self.wave_risetime))
-                if points_up == 0:
-                    points_up = 1
-                points_down = 140 - points_up
-                self.interval = int(self.wave_risetime / points_up) + 1
-                points_up = int(self.wave_risetime / self.interval)
-                if points_up == 0:
-                    points_up = 1
-                increment = self.wave_amplitude / points_up
-            for i in range(points_up):
-                self.buffer.append(round((self.wave_offset + increment * i), 2))
-            if self.wave_period >= 140:
-                self.interval = int((self.wave_period - self.wave_risetime) / points_down) + 1
-                points_down = int((self.wave_period - self.wave_risetime) / self.interval)
-            increment = self.wave_amplitude / points_down
-            init = self.wave_offset + self.wave_amplitude
-            for i in range(points_down):
-                self.buffer.append(round((init - increment * i), 2))
-        #  Sine
-        elif self.wave_mode == 2:
-            self.interval = 1 if self.wave_period < 140 else (self.wave_period/140 + 1)
-            t = np.arange(0, self.wave_period, self.interval)
-            self.buffer = np.sin(2 * np.pi / self.wave_period * t) * (self.wave_amplitude)
-            for i, v in enumerate(self.buffer):
-                self.buffer[i] = v + self.wave_offset
-        #  Sawtooth
-        elif self.wave_mode == 3:
-            if self.wave_period < 140:
-                self.interval = 1
-                points = int(self.wave_period)
-                increment = self.wave_amplitude / points
-            else:
-                self.interval = int(self.wave_period / 140) + 1
-                points = int(self.wave_period / self.interval)
-                if points == 0:
-                    points = 1
-                increment = self.wave_amplitude / points
-            for i in range(points):
-                self.buffer.append(self.wave_offset + increment * i)
-        #  Fixed potential
-        elif self.wave_mode == 4:
-            self.interval = self.wave_period
-            self.buffer.append(self.wave_offset)
-
-        #if len(self.buffer) >= 140:
-        #    self.buffer = self.buffer[:140]
 
     def configureChart(self, i):
-        dlg = Configure_chart(self.daq)
+        dlg = Configure_chart(self.model)
         if dlg.exec_():
             values = dlg.update_conf()
             self.ch_pos[i] = self.names.index(str(values[0]))
@@ -310,6 +258,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if port_opendaq != '':
             self.cfg.setValue('port', port_opendaq)
             self.daq = DAQ(str(port_opendaq))
+            self.model = DAQModel.new(*self.daq.get_info()) 
             for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
                 p.setEnabled(True)
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
@@ -342,9 +291,10 @@ class Configure_Wave(QtGui.QDialog, configwave.Ui_MainWindow):
 
 
 class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
-    def __init__(self, daq, parent=None):
+    def __init__(self, model, parent=None):
         super(Configure_chart, self).__init__(parent)
-        self.daq = daq
+        self.model = model
+        #  self.model = DAQModel.new(*self.daq.get_info()) 
         self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
         self.GetcbValues()
@@ -363,12 +313,11 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
         return pos_channel, neg_channel, Range, Rate, samples, mode, mode_SE
 
     def GetcbValues(self):
-        model = DAQModel.new(*self.daq.get_info())
-        for ninput in model.adc.ninputs:
+        for ninput in self.model.adc.ninputs:
             self.cBnegchannel.addItem(self.names[ninput] if ninput < 9 else self.names[9])
-        for pinput in model.adc.pinputs:
+        for pinput in self.model.adc.pinputs:
             self.cBposchannel.addItem(self.names[pinput] if pinput < 9 else self.names[9])
-        for gain in model.adc.pga_gains:
+        for gain in self.model.adc.pga_gains:
             self.cBrange.addItem(str(gain))
 
 
