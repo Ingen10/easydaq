@@ -178,7 +178,7 @@ class Ui_MainWindow(object):
         self.sBriseTime.setMinimumSize(QtCore.QSize(120, 27))
         self.sBriseTime.setDecimals(3)
         self.sBriseTime.setMaximum(65536.0)
-        self.sBriseTime.setProperty("value", 10.0)
+        self.sBriseTime.setProperty("value", 40.0)
         self.sBriseTime.setObjectName(_fromUtf8("sBriseTime"))
         self.stackedWidget_2.addWidget(self.page_4)
         self.page_8 = QtGui.QWidget()
