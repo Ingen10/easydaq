@@ -96,11 +96,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
         self.daq.stop()
         
-        #self.daq.clear_experiments()
-
     def play(self):
-        self.daq.stop(clear=True)
-        #self.daq.flush()
+        self.daq.clear_experiments()
         self.plotWidget.canvas.ax.cla()
         self.plotWidget.canvas.ax.grid(True)
         self.X = [[], [], []]
@@ -109,7 +106,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.inter_buffer = []
         self.experiments = [0, 0, 0, 0]
         self.get_buffer()
-        print(self.buffer)
         self.conf_experiments()
         self.update()
 
@@ -120,10 +116,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             points = self.wave_period / self.interval
             if points > 60:
                 self.interval = self.wave_period / 60.0
-            print(self.interval)
             points_up = int(self.wave_timeon / self.interval)
             points_down = int(self.wave_period / self.interval) - points_up
-            print(points_up, points_down)
             for i in range(points_up):
                 self.buffer.append(self.wave_amplitude/2.0 + self.wave_offset)
             for v in range(points_down):
@@ -152,7 +146,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 points_down = int((self.wave_period - self.wave_risetime) / self.interval)
             increment = float(self.wave_amplitude) / float(points_down)
             init = self.wave_offset + self.wave_amplitude
-            print(increment)
             for i in range(points_down):
                 self.buffer.append(round((init - increment * i), 2))
         #  Sine
@@ -209,9 +202,9 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             
         
     def update(self):
-        self.daq.start()
-        self.plot()
         if self.Bplay.isChecked():
+            self.daq.start()
+            self.plot()
             timer = QtCore.QTimer()
             timer.timeout.connect(self.update)
             timer.start(0.1)
@@ -222,7 +215,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
                 new_data = self.experiments[i].read()
                 for d in new_data:
-                    print(d)
                     self.time = self.rate[i]/1000.0*len(self.Y[i])
                     self.X[i].append(self.time)
                     self.Y[i].append(float(d))
@@ -233,7 +225,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         dlg = Configure_Wave(self)
         if dlg.exec_():
             self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave()
-            print(self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime)
 
     def configureChart(self, i):
         dlg = Configure_chart(self.model)
@@ -247,9 +238,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.mode[i] = values[5]
             self.modeSE[i] = values[6]
             self.num_points[i] = 0 if self.mode[i] else 20
-            print(self.ch_pos, self.ch_neg)
-            print(self.range, self.rate, self.samples)
-            print(self.mode, self.modeSE, self.num_points)
 
     def GetPort(self):
         dlg = Configuration(self)
@@ -294,7 +282,6 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
     def __init__(self, model, parent=None):
         super(Configure_chart, self).__init__(parent)
         self.model = model
-        #  self.model = DAQModel.new(*self.daq.get_info()) 
         self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
         self.GetcbValues()
