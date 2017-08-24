@@ -56,7 +56,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.cfg = QtCore.QSettings('opendaq')
 
-        #  Configuracion inicial experimentos
+        # Experiments initial configuration
         exp_parameters = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
         values = [0, 0, 0, 0, 0, 200, 10]
         for i, p in enumerate(exp_parameters):          
@@ -66,7 +66,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.cfg.setValue(p,values[i])
             self.cfg.endArray()
 
-        #  Configuracion inicial waveform
+        #  Waveforms initial configuration
         wave_param = ["wmode_index", "period_index", "period", "perios_us", "offset", "amplitude", "time", "rise_time"]
         wvalues = [0, 0, 100, 100000, 0, 1, 40, 40]
         for i, p in enumerate(wave_param):
@@ -88,7 +88,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
         port_opendaq = str(self.cfg.value('port').toString())
 
-        #  Wave
+        #  Waves
         self.wave_mode = 0
         self.wave_period = 100
         self.wave_offset = 0
@@ -97,15 +97,16 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.wave_risetime = 40
         self.buffer = np.zeros(self.tam_buff)
 
+        #  Plot parameters
         self.coef = [0, 0, 0]
-        self.time = 0
+        self.time = [0, 0, 0]
 
         try:
             self.daq = DAQ(port_opendaq)
             self.model = DAQModel.new(*self.daq.get_info())
         except:
             port_opendaq = ''
-            for p in [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.Bplay]:
+            for p in [self.Bplay, self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]:
                 p.setEnabled(False)
         self.toolBar.actionTriggered.connect(self.GetPort)
         self.Bconfigure1.clicked.connect(lambda: self.configureChart(0))
@@ -134,7 +135,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.X = np.zeros((3, self.tam_values))
         self.Y = np.zeros((3, self.tam_values))
         self.coef = [0, 0, 0]
-        self.time = 0
+        self.time = [0, 0, 0]
         self.buffer = np.zeros(self.tam_buff)
         self.experiments = [0, 0, 0, 0]
         self.get_buffer()
@@ -208,7 +209,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             QtCore.QTimer.singleShot(10, self.update)
 
     def plot(self):
-        for i in range(4):
+        for i in range(3):
             if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
                 new_data = self.experiments[i].read()
                 for j, d in enumerate(new_data):
@@ -216,10 +217,10 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                         self.coef[i] = self.tam_values - 1
                         displace(self.X[i])
                         displace(self.Y[i])
-                    self.X[i][self.coef[i]] = self.time
+                    self.X[i][self.coef[i]] = self.time[i]
                     self.Y[i][self.coef[i]] = float(d)
                     self.coef[i] = self.coef[i] + 1
-                    self.time = self.time + self.rate[i]/1000.0
+                    self.time[i] = self.time[i] + self.rate[i]/1000.0
                 if self.coef[i]:
                     self.plotWidget.canvas.ax.plot(self.X[i][:self.coef[i]], self.Y[i][:self.coef[i]], color=self.color_curve[i], linewidth=0.7)
                     self.plotWidget.canvas.draw()
