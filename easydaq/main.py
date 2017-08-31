@@ -44,10 +44,12 @@ def list_serial_ports():
             pass
     return result
 
+
 def displace(vector):
         for i in range(len(vector)-1):
             vector[i] = vector[i+1]
         return vector
+
 
 class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
     def __init__(self, parent=None):
@@ -57,13 +59,13 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.cfg = QtCore.QSettings('opendaq')
 
         # Experiments initial configuration
-        exp_parameters = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
+        exp_param = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
         values = [0, 0, 0, 0, 0, 200, 10]
-        for i, p in enumerate(exp_parameters):          
+        for i, p in enumerate(exp_param):
             self.cfg.beginWriteArray(p)
             for j in range(3):
                 self.cfg.setArrayIndex(j)
-                self.cfg.setValue(p,values[i])
+                self.cfg.setValue(p, values[i])
             self.cfg.endArray()
 
         #  Waveforms initial configuration
@@ -72,7 +74,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         for i, p in enumerate(wave_param):
             self.cfg.setValue(p, wvalues[i])
 
-        self.tam_buff = 60
+        self.tam_buff = 380
         self.tam_values = 100
 
         #  Experiments
@@ -136,16 +138,26 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.Y = np.zeros((3, self.tam_values))
         self.coef = [0, 0, 0]
         self.time = [0, 0, 0]
-        self.buffer = np.zeros(self.tam_buff)
         self.experiments = [0, 0, 0, 0]
         self.get_buffer()
         self.conf_experiments()
         self.update()
 
     def get_buffer(self):
+        self.tam_buff = 300
+        if self.wave_mode == 4:
+            self.interval = int(self.wave_period)
+        else:
+            self.interval = int(self.wave_period / (self.tam_buff + 1))
+        print(self.interval)
+        if self.interval < 1:
+            self.interval = 1
+        self.tam_buff = int(self.wave_period / self.interval)
+        self.buffer = np.zeros(self.tam_buff)
+        print(self.interval)
+        print(len(self.buffer))
         #  Square
         if self.wave_mode == 0:
-            self.interval = self.wave_period / float(self.tam_buff)
             points_up = int(self.wave_timeon / self.interval)
             points_down = int(self.wave_period / self.interval) - points_up
             for i in range(self.tam_buff):
@@ -162,29 +174,27 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             increment = float(self.wave_amplitude) / float(points_up - 1)
             for i in range(points_up):
                 self.buffer[i] = round((self.wave_offset + increment * i), 2)
-            self.interval = int((self.wave_period - self.wave_risetime) / points_down) + 1
             init = self.wave_offset + self.wave_amplitude
             increment = float(self.wave_amplitude) / float(points_down - 1)
             for i in range(points_down):
                 self.buffer[i + points_up] = round((init - increment * i), 2)
         #  Sine
         elif self.wave_mode == 2:
-            self.interval = (self.wave_period/self.tam_buff + 1)
             t = np.arange(0, self.wave_period, self.interval)
             self.buffer = np.sin(2 * np.pi / self.wave_period * t) * (self.wave_amplitude)
             for i, v in enumerate(self.buffer):
                 self.buffer[i] = v + self.wave_offset
         #  Sawtooth
         elif self.wave_mode == 3:
-            self.interval = self.wave_period/(self.tam_buff + 1)
             increment = float(self.wave_amplitude) / (self.tam_buff - 1)
             for i in range(self.tam_buff):
                 self.buffer[i] = self.wave_offset + increment * i
         #  Fixed potential
         elif self.wave_mode == 4:
-            self.interval = self.wave_period
             for i in range(self.tam_buff):
                 self.buffer[i] = self.wave_offset
+        print(len(self.buffer))
+        print(self.buffer)
 
     def conf_experiments(self):
         for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
@@ -195,7 +205,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=self.rate[i], npoints=self.num_points[i], continuous=self.mode[i])
                 self.experiments[i].analog_setup(pinput=self.ch_pos[i], ninput=self.ch_neg[i], gain=self.range[i], nsamples=self.samples[i])
         if self.cBenable4.isChecked():
-            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
+            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=1 if self.interval < 1 else self.interval , npoints=len(self.buffer), continuous=True)
             self.experiments[3].load_signal(self.buffer)
 
     def update(self):
@@ -228,7 +238,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
     def Configurewave(self):
         dlg = Configure_Wave(self.cfg)
         if dlg.exec_():
-            self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave(self.cfg)
+            self.wave_mode, self.wave_period, self.wave_offset,self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave(self.cfg)
 
     def configureChart(self, i):
         dlg = Configure_chart(self.model, self.cfg, i)
@@ -311,7 +321,6 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
         self.pBconfirm.clicked.connect(lambda: self.update_conf(cfg, exp))
         self.cBtype.currentIndexChanged.connect(self.status_period)
 
-
     def update_conf(self, cfg, exp):
         pos_channel = self.cBposchannel.currentText()
         neg_channel = self.cBnegchannel.currentText()
@@ -321,12 +330,12 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
         mode = False if self.cBmode.currentIndex() else True
         mode_SE = self.cBtype.currentIndex()
 
-        exp_parameters = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
+        exp_param = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
         values = [mode_SE, self.cBmode.currentIndex(), self.cBposchannel.currentIndex(), self.cBnegchannel.currentIndex(), Range, samples, Rate]
-        for i, p in enumerate(exp_parameters):       
+        for i, p in enumerate(exp_param):
             cfg.beginWriteArray(p)
             cfg.setArrayIndex(exp)
-            cfg.setValue(p,values[i])
+            cfg.setValue(p, values[i])
             cfg.endArray()
 
         self.accept()
@@ -342,7 +351,7 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
             self.cBrange.addItem(str(gain))
 
         exp_param = ["type_index", "mode_index", "posch_index", "negch_index", "range_index", "samples", "rate"]
-        gui_w = [self.cBtype, self.cBmode, self.cBposchannel, self.cBnegchannel, self.cBrange, self.sBsamples, self.sBrate]
+        gui_wid = [self.cBtype, self.cBmode, self.cBposchannel, self.cBnegchannel, self.cBrange, self.sBsamples, self.sBrate]
         for i, p in enumerate(exp_param):
             a = []
             cfg.beginReadArray(p)
@@ -351,9 +360,9 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
                 a.append(cfg.value(p).toInt())
             cfg.endArray()
             if i > 4:
-                gui_w[i].setValue(a[exp][0])
+                gui_wid[i].setValue(a[exp][0])
             else:
-                gui_w[i].setCurrentIndex(a[exp][0])
+                gui_wid[i].setCurrentIndex(a[exp][0])
 
     def status_period(self):
         self.sBrate.setEnabled(False if self.cBtype.currentIndex() else True)
