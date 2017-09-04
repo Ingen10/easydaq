@@ -16,10 +16,10 @@ from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 from opendaq.daq import *
 
-import easydaq
-import config
-import configurechart
-import configwave
+from . import easydaq
+from . import config
+from . import configurechart
+from . import configwave
 
 
 def list_serial_ports():
@@ -88,7 +88,10 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.num_points = [0, 0, 0]
         self.experiments = [0, 0, 0, 0]
         self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
-        port_opendaq = str(self.cfg.value('port').toString())
+        if sys.version[0] == '3':
+            port_opendaq = self.cfg.value('port')
+        else:
+            port_opendaq = (self.cfg.value('port')).toString()
 
         #  Waves
         self.wave_mode = 0
@@ -149,13 +152,10 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.interval = int(self.wave_period)
         else:
             self.interval = int(self.wave_period / (self.tam_buff + 1))
-        print(self.interval)
         if self.interval < 1:
             self.interval = 1
         self.tam_buff = int(self.wave_period / self.interval)
         self.buffer = np.zeros(self.tam_buff)
-        print(self.interval)
-        print(len(self.buffer))
         #  Square
         if self.wave_mode == 0:
             points_up = int(self.wave_timeon / self.interval)
@@ -193,8 +193,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         elif self.wave_mode == 4:
             for i in range(self.tam_buff):
                 self.buffer[i] = self.wave_offset
-        print(len(self.buffer))
-        print(self.buffer)
 
     def conf_experiments(self):
         for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
@@ -205,7 +203,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=self.rate[i], npoints=self.num_points[i], continuous=self.mode[i])
                 self.experiments[i].analog_setup(pinput=self.ch_pos[i], ninput=self.ch_neg[i], gain=self.range[i], nsamples=self.samples[i])
         if self.cBenable4.isChecked():
-            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=1 if self.interval < 1 else self.interval , npoints=len(self.buffer), continuous=True)
+            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=1 if self.interval < 1 else self.interval, npoints=len(self.buffer), continuous=True)
             self.experiments[3].load_signal(self.buffer)
 
     def update(self):
@@ -238,7 +236,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
     def Configurewave(self):
         dlg = Configure_Wave(self.cfg)
         if dlg.exec_():
-            self.wave_mode, self.wave_period, self.wave_offset,self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave(self.cfg)
+            self.wave_mode, self.wave_period, self.wave_offset, self.wave_amplitude, self.wave_timeon, self.wave_risetime = dlg.conf_wave(self.cfg)
 
     def configureChart(self, i):
         dlg = Configure_chart(self.model, self.cfg, i)
@@ -282,10 +280,14 @@ class Configure_Wave(QtGui.QDialog, configwave.Ui_MainWindow):
         wave_param = ["wmode_index", "period_index", "period", "perios_us", "offset", "amplitude", "time", "rise_time"]
         wave_wid = [self.cBmode, self.cBmodoPeriod, self.sBperiodms, self.sBperiodus, self.sBoffset, self.sBamplitude, self.sBtimeon, self.sBriseTime]
         for i, p in enumerate(wave_param):
-            if i > 1:
-                wave_wid[i].setValue(cfg.value(p).toInt()[0])
+            if sys.version[0] == '2':
+                value = cfg.value(p).toInt()[0]
             else:
-                wave_wid[i].setCurrentIndex(cfg.value(p).toInt()[0])
+                value = int(cfg.value(p))
+            if i > 1:
+                wave_wid[i].setValue(value)
+            else:
+                wave_wid[i].setCurrentIndex(value)
 
     def conf_wave(self, cfg):
         mode_wave = self.cBmode.currentIndex()
@@ -357,12 +359,15 @@ class Configure_chart(QtGui.QDialog, configurechart.Ui_MainWindow):
             cfg.beginReadArray(p)
             for j in range(3):
                 cfg.setArrayIndex(j)
-                a.append(cfg.value(p).toInt())
+                if sys.version[0] == '3':
+                    a.append(cfg.value(p))
+                else:
+                    a.append(cfg.value(p).toInt())
             cfg.endArray()
             if i > 4:
-                gui_wid[i].setValue(a[exp][0])
+                gui_wid[i].setValue(a[exp][0] if sys.version[0] == '2' else int(a[exp]))
             else:
-                gui_wid[i].setCurrentIndex(a[exp][0])
+                gui_wid[i].setCurrentIndex(a[exp][0] if sys.version[0] == '2' else int(a[exp]))
 
     def status_period(self):
         self.sBrate.setEnabled(False if self.cBtype.currentIndex() else True)

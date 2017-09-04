@@ -16,11 +16,14 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -222,7 +225,7 @@ class Ui_MainWindow(object):
         self.sBperiodms.setMinimum(1.0)
         self.sBperiodms.setMaximum(65536.0)
         self.sBperiodms.setSingleStep(0.1)
-        self.sBperiodms.setProperty("value", 100.0)
+        self.sBperiodms.setProperty("value", 200.0)
         self.sBperiodms.setObjectName(_fromUtf8("sBperiodms"))
         self.stackedWidget_3.addWidget(self.page_11)
         self.page_12 = QtGui.QWidget()
@@ -236,7 +239,7 @@ class Ui_MainWindow(object):
         self.sBperiodus.setSizePolicy(sizePolicy)
         self.sBperiodus.setMinimumSize(QtCore.QSize(120, 27))
         self.sBperiodus.setMaximum(65536000)
-        self.sBperiodus.setProperty("value", 10000)
+        self.sBperiodus.setProperty("value", 20000)
         self.sBperiodus.setObjectName(_fromUtf8("sBperiodus"))
         self.stackedWidget_3.addWidget(self.page_12)
         self.formLayout.setWidget(2, QtGui.QFormLayout.FieldRole, self.stackedWidget_3)
@@ -303,4 +306,3 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
-
