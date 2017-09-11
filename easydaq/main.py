@@ -68,10 +68,14 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         try:
             self.daq = DAQ(str(port_opendaq))
             self.model = DAQModel.new(*self.daq.get_info())
+            self.dlg1 = ConfigExperiment(self.model, self.cfg, 0)
+            self.dlg2 = ConfigExperiment(self.model, self.cfg, 1)
+            self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
         except:
             port_opendaq = ''
             for p in [self.Bplay, self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]:
                 p.setEnabled(False)
+        #  Experiments windows
         self.toolBar.actionTriggered.connect(self.get_port)
         self.Bconfigure1.clicked.connect(lambda: self.configure_experiment(0))
         self.Bconfigure2.clicked.connect(lambda: self.configure_experiment(1))
@@ -106,29 +110,27 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def get_buffer(self):
         #  Obtener parametros
-        wave_param = ['wmode_index', 'period_index', 'period', 'period_us', 'offset',
-                      'amplitude', 'time', 'rise_time']
+        wave_param = ['wmode_index', 'period', 'offset', 'amplitude', 'time', 'rise_time']
         param = {}
         for p in wave_param:
             if sys.version[0] == 3:
                 param[p] = int(self.cfg.value(p))
             else:
                 param[p] = self.cfg.value(p).toInt()[0]
-        wave_period = param['period_us']/1000.0 if param['period_index'] else param['period']
 
         self.tam_buff = 300
         if param['wmode_index'] == 4:
-            self.interval = int(wave_period)
+            self.interval = int(param['period'])
         else:
-            self.interval = int(wave_period / (self.tam_buff + 1))
+            self.interval = int(param['period'] / (self.tam_buff + 1))
         if self.interval < 1:
             self.interval = 1
-        self.tam_buff = int(wave_period / self.interval)
+        self.tam_buff = int(param['period'] / self.interval)
         self.buffer = np.zeros(self.tam_buff)
         #  Square
         if param['wmode_index'] == 0:
             points_up = int(param['time'] / self.interval)
-            points_down = int(wave_period / self.interval) - points_up
+            points_down = int(param['period'] / self.interval) - points_up
             for i in range(self.tam_buff):
                 if i > points_up:
                     self.buffer[i] = -(param['amplitude']/2.0) + param['offset']
@@ -136,7 +138,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     self.buffer[i] = param['amplitude']/2.0 + param['offset']
         #  Triangle
         elif param['wmode_index'] == 1:
-            points_up = int(self.tam_buff * param['rise_time'] / wave_period)
+            points_up = int(self.tam_buff * param['rise_time'] / param['period'])
             if points_up == 0:
                 points_up = 1
             points_down = self.tam_buff - points_up
@@ -149,8 +151,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.buffer[i + points_up] = round((init - increment * i), 2)
         #  Sine
         elif param['wmode_index'] == 2:
-            t = np.arange(0, wave_period, self.interval)
-            self.buffer = np.sin(2 * np.pi / wave_period * t) * param['amplitude']
+            t = np.arange(0, param['period'], self.interval)
+            self.buffer = np.sin(2 * np.pi / param['period'] * t) * param['amplitude']
             for i, v in enumerate(self.buffer):
                 self.buffer[i] = v + param['offset']
         #  Sawtooth
@@ -225,23 +227,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.dlg_wave.exec_()
 
     def configure_experiment(self, i):
-        try:
-            if i == 0:
-                self.dlg1.show()
-            elif i == 1:
-                self.dlg2.show()
-            else:
-                self.dlg3.show()
-        except:
-            if i == 0:
-                self.dlg1 = ConfigExperiment(self.model, self.cfg, i)
-                self.dlg1.exec_()
-            elif i == 1:
-                self.dlg2 = ConfigExperiment(self.model, self.cfg, i)
-                self.dlg2.exec_()
-            else:
-                self.dlg3 = ConfigExperiment(self.model, self.cfg, i)
-                self.dlg3.exec_()
+        exp = [self.dlg1, self.dlg2, self.dlg3]
+        exp[i].show()
 
     def get_port(self):
         dlg = Configuration(self)
@@ -251,6 +238,9 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.cfg.setValue('port', port_opendaq)
             self.daq = DAQ(str(port_opendaq))
             self.model = DAQModel.new(*self.daq.get_info())
+            self.dlg1 = ConfigExperiment(self.model, self.cfg, 0)
+            self.dlg2 = ConfigExperiment(self.model, self.cfg, 1)
+            self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
             for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.Bplay]:
                 p.setEnabled(True)
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
@@ -269,9 +259,7 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
 
     def conf_wave(self, cfg):
         wave_param = {"wmode_index": self.cBmode.currentIndex(),
-                      "period_index": self.cBmodoPeriod.currentIndex(),
                       "period": self.sBperiodms.value(),
-                      "period_us": self.sBperiodus.value(),
                       "offset": self.sBoffset.value(),
                       "amplitude": self.sBamplitude.value(),
                       "time": self.sBtimeon.value(),
@@ -285,7 +273,8 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
             self.hide()
 
     def change(self):
-        self.sBamplitude.setEnabled(False if int(self.cBmode.currentIndex()) == 4 else True)
+        for wid in [self.sWperiod1, self.sWperiod2, self.sWamp1, self.sWamp2]:
+            wid.setCurrentIndex(1 if int(self.cBmode.currentIndex()) == 4 else 0)
 
 
 class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
