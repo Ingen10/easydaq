@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'easydaq/easydaq_2.ui'
+# Form implementation generated from reading ui file 'easydaq/easydaq.ui'
 #
 # Created by: PyQt4 UI code generator 4.11.4
 #
@@ -17,14 +17,11 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
-
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
-
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -239,6 +236,7 @@ class Ui_MainWindow(object):
         QtCore.QObject.connect(self.cBenable2, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure2.setEnabled)
         QtCore.QObject.connect(self.cBenable3, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure3.setEnabled)
         QtCore.QObject.connect(self.cBenable4, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure4.setEnabled)
+        QtCore.QObject.connect(self.Bplay, QtCore.SIGNAL(_fromUtf8("toggled(bool)")), self.Bplay.setDisabled)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -269,3 +267,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
