@@ -142,7 +142,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         wave_param = ['wmode_index', 'period', 'offset', 'amplitude', 'time', 'rise_time']
         param = {}
         for p in wave_param:
-            if sys.version[0] == 3:
+            if sys.version[0] == '3':
                 param[p] = int(self.cfg.value(p))
             else:
                 param[p] = self.cfg.value(p).toInt()[0]
@@ -195,7 +195,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.buffer[i] = param['offset']
         #  Import CSV
         else:
-            if sys.version[0] == 3:
+            if sys.version[0] == '3':
                 path = str(self.cfg.value("file_path"))
             else:
                 path = self.cfg.value("file_path").toString()
@@ -230,10 +230,11 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.num_points = 0 if param['mode_index'] else 20
                 #  Crear exp
                 if param['type_index']:
+                    print(param['posch'], param['negch'], param['range_index'])
                     self.experiments[i] = self.daq.create_external(mode=ExpMode.ANALOG_IN, clock_input=i+1, edge=0, npoints=self.num_points, continuous=not(param['mode_index']))
                 else:
                     self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=param['rate'], npoints=self.num_points, continuous=not(param['mode_index']))
-                self.experiments[i].analog_setup(pinput=param['posch'], ninput=param['negch'], gain=param['range_index'], nsamples=param['samples'])
+                self.experiments[i].analog_setup(pinput=int(param['posch']), ninput=int(param['negch']), gain=int(param['range_index']), nsamples=int(param['samples']))
         if self.cBenable4.isChecked():
             self.get_buffer()
             self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)

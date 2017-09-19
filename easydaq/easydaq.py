@@ -271,8 +271,8 @@ class Ui_MainWindow(object):
         self.actionStop.setText(_translate("MainWindow", "stop", None))
         self.actionCSV.setText(_translate("MainWindow", "CSV", None))
 
-from widgets import MPL_Widget
-import res_rc
+from .widgets import MPL_Widget
+from . import res_rc
 
 if __name__ == "__main__":
     import sys
