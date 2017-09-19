@@ -5,6 +5,8 @@ from __future__ import print_function
 import sys
 import glob
 import fractions
+import os
+import csv
 
 import numpy as np
 import serial
@@ -12,10 +14,12 @@ from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import matplotlib
+from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 from opendaq.daq import *
 
+from .widgets import NavigationToolbar
 from . import easydaq
 from . import config
 from . import configurechart
@@ -55,7 +59,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         QtGui.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
-        self.tam_values = 100
+        self.tam_values = 400
         #  Experiments
         self.experiments = [0, 0, 0, 0]
         self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
@@ -73,30 +77,44 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
         except:
             port_opendaq = ''
-            for p in [self.Bplay, self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]:
+            for p in [self.actionPlay, self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]:
                 p.setEnabled(False)
-        #  Experiments windows
-        self.toolBar.actionTriggered.connect(self.get_port)
+        #  Toolbar
+        nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
+        nav.setVisible(False)
+        for action in nav.actions():
+            self.toolBar.addAction(action)
+        self.actionConfigure.triggered.connect(self.get_port)
         self.Bconfigure1.clicked.connect(lambda: self.configure_experiment(0))
         self.Bconfigure2.clicked.connect(lambda: self.configure_experiment(1))
         self.Bconfigure3.clicked.connect(lambda: self.configure_experiment(2))
         self.Bconfigure4.clicked.connect(self.configure_wave)
-        self.Bplay.clicked.connect(self.play)
-        self.Bstop.clicked.connect(self.stop)
+        self.actionPlay.triggered.connect(self.play)
+        self.actionStop.triggered.connect(self.stop)
+        self.actionCSV.triggered.connect(self.export_csv)
         try:
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
         except:
             pass
 
     def stop(self):
+        self.actionPlay.toggle()
+        self.actionPlay.setEnabled(True)
+        self.actionStop.setEnabled(False)
         conf_buttons = [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4]
+        self.actionCSV.setEnabled(True)
+        self.actionConfigure.setEnabled(True)
         for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]):
+            p.setEnabled(True)
             conf_buttons[i].setEnabled(True if p.isChecked() else False)
         for i in range(3):
             self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
         self.daq.stop()
 
     def play(self):
+        self.actionStop.setEnabled(True)
+        for wid in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.actionCSV, self.actionPlay, self.actionConfigure]:
+            wid.setEnabled(False)
         self.daq.clear_experiments()
         self.plotWidget.canvas.ax.cla()
         self.plotWidget.canvas.ax.grid(True)
@@ -108,6 +126,17 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.create_experiments()
         self.update()
 
+    def export_csv(self):
+        fname = QtGui.QFileDialog.getSaveFileName(self, 'Export as CSV')
+        fieldnames = ['Time (ms)', 'Voltage (V)']
+        for i, exp in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
+            if exp.isChecked():
+                with open(fname + '_exp%d.csv' % (i + 1) , 'w') as csvfile:
+                    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                    writer.writeheader()
+                    for j in range(self.coef[i]):
+                        writer.writerow({'Time (ms)': self.X[i][j], 'Voltage (V)': self.Y[i][j]})
+
     def get_buffer(self):
         #  Obtener parametros
         wave_param = ['wmode_index', 'period', 'offset', 'amplitude', 'time', 'rise_time']
@@ -117,16 +146,16 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 param[p] = int(self.cfg.value(p))
             else:
                 param[p] = self.cfg.value(p).toInt()[0]
-
-        self.tam_buff = 300
-        if param['wmode_index'] == 4:
-            self.interval = int(param['period'])
-        else:
-            self.interval = int(param['period'] / (self.tam_buff + 1))
-        if self.interval < 1:
-            self.interval = 1
-        self.tam_buff = int(param['period'] / self.interval)
-        self.buffer = np.zeros(self.tam_buff)
+        if param['wmode_index'] != 5:
+            self.tam_buff = 300
+            if param['wmode_index'] == 4:
+                self.interval = int(param['period'])
+            else:
+                self.interval = int(param['period'] / (self.tam_buff + 1))
+            if self.interval < 1:
+                self.interval = 1
+            self.tam_buff = int(param['period'] / self.interval)
+            self.buffer = np.zeros(self.tam_buff)
         #  Square
         if param['wmode_index'] == 0:
             points_up = int(param['time'] / self.interval)
@@ -164,6 +193,24 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         elif param['wmode_index'] == 4:
             for i in range(self.tam_buff):
                 self.buffer[i] = param['offset']
+        #  Import CSV
+        else:
+            if sys.version[0] == 3:
+                path = str(self.cfg.value("file_path"))
+            else:
+                path = self.cfg.value("file_path").toString()
+            rows = 0
+            self.interval = 0.0
+            with open(path, 'rb') as f:
+                reader = csv.DictReader(f)
+                self.tam_buff = 400
+                self.buffer = np.zeros(self.tam_buff)
+                for i, row in enumerate(reader):
+                    if i == 0:
+                        initial_time = float(row['Time (ms)'])
+                    self.buffer[i] = float(row['Voltage (V)'])
+                self.interval = 1000 * (float(row['Time (ms)']) - initial_time) / float(i)
+            self.buffer = self.buffer[:i]
 
     def create_experiments(self):
         exp_param = ['type_index', 'mode_index', 'posch', 'negch', 'range_index',
@@ -194,7 +241,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def update(self):
         play_status = self.cBenable1.isChecked() | self.cBenable2.isChecked() | self.cBenable3.isChecked()
-        if self.Bplay.isChecked() and play_status:
+        if self.actionPlay.isChecked() and play_status:
             self.daq.start()
             self.plot()
             timer = QtCore.QTimer()
@@ -203,6 +250,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             QtCore.QTimer.singleShot(10, self.update)
 
     def plot(self):
+        self.plotWidget.canvas.ax.hold(False if self.cBosc.isChecked() else True)
         for i in range(3):
             if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
                 new_data = self.experiments[i].read()
@@ -217,6 +265,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     self.time[i] = self.time[i] + self.rate[i]/1000.0
                 if self.coef[i]:
                     self.plotWidget.canvas.ax.plot(self.X[i][:self.coef[i]], self.Y[i][:self.coef[i]], color=self.color_curve[i], linewidth=0.7)
+                    self.plotWidget.canvas.ax.grid(True)
                     self.plotWidget.canvas.draw()
 
     def configure_wave(self):
@@ -241,11 +290,11 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.dlg1 = ConfigExperiment(self.model, self.cfg, 0)
             self.dlg2 = ConfigExperiment(self.model, self.cfg, 1)
             self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
-            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.Bplay]:
+            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.actionPlay]:
                 p.setEnabled(True)
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
         else:
-            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.Bplay]:
+            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.actionPlay]:
                 p.setEnabled(False)
             self.statusBar.showMessage("")
 
@@ -254,7 +303,9 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
     def __init__(self, cfg, parent=None):
         super(ConfigureWave, self).__init__(parent)
         self.setupUi(self)
+        self.path = ''
         self.cBmode.currentIndexChanged.connect(self.change)
+        self.Bchoose.clicked.connect(self.select_file)
         self.Bsubmit.clicked.connect(lambda: self.conf_wave(cfg))
 
     def conf_wave(self, cfg):
@@ -263,7 +314,8 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
                       "offset": self.sBoffset.value(),
                       "amplitude": self.sBamplitude.value(),
                       "time": self.sBtimeon.value(),
-                      "rise_time": self.sBriseTime.value()}
+                      "rise_time": self.sBriseTime.value(),
+                      "file_path": str(self.path)}
         for p in wave_param.keys():
             cfg.setValue(p, wave_param[p])
         self.hide()
@@ -273,9 +325,21 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
             self.hide()
 
     def change(self):
+        index_mode = self.cBmode.currentIndex()
+        for wid in [self.sWDC, self.sWDC2]:
+            wid.setCurrentIndex(1 if index_mode == 5 else 0)
         for wid in [self.sWperiod1, self.sWperiod2, self.sWamp1, self.sWamp2]:
-            wid.setCurrentIndex(1 if int(self.cBmode.currentIndex()) == 4 else 0)
+            if index_mode == 4:
+                wid.setCurrentIndex(1)
+            elif index_mode == 5:
+                wid.setCurrentIndex(2)
+            else:
+                wid.setCurrentIndex(0)
 
+    def select_file(self):
+        self.path = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '', "CSV Files (*.csv)")
+        self.path = str(self.path)
+        self.lb_namefile.setText(os.path.split(str(self.path))[1])
 
 class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
     def __init__(self, model, cfg, exp, parent=None):

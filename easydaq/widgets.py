@@ -9,7 +9,6 @@ class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None):
         self.fig = Figure(facecolor='#cccccc')
         self.ax = self.fig.add_subplot(111)
-        self.ax.autoscale(True)
         self.fig.subplots_adjust(left=0.15, bottom=0.15, right=0.9, top=0.9)
         self.ax.grid(True)
         self.xtitle = "Time (s)"
@@ -32,13 +31,13 @@ class MPL_Widget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.canvas = MyMplCanvas()
-        self.toolbar = NavigationToolbar(self.canvas, self.canvas)
+        #self.toolbar = NavigationToolbar(self.canvas, self.canvas)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.canvas)
-        self.vbox.addWidget(self.toolbar)
+        #self.vbox.addWidget(self.toolbar)
         self.setLayout(self.vbox)
 
 
 class NavigationToolbar(NavigationToolbar2QT):
     toolitems = [t for t in NavigationToolbar2QT.toolitems if
-                 t[0] in ('Home', 'Pan', 'Zoom')]
+                 t[0] in ('Home', 'Pan', 'Zoom', 'Save', 'Subplots')]
