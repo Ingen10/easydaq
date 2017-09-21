@@ -5,26 +5,24 @@ from __future__ import print_function
 
 import sys
 import glob
-import fractions
 import os
 import csv
+from serial import SerialException
+from scipy import signal
 
 import numpy as np
 import serial
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-import matplotlib
-from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
+from PyQt4 import QtCore, QtGui
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
-from opendaq.daq import *
 
 from .widgets import NavigationToolbar
 from . import easydaq
 from . import config
 from . import configurechart
 from . import configwave
+
+BUFFER_SIZE = 400
 
 
 def list_serial_ports():
@@ -49,176 +47,186 @@ def list_serial_ports():
     return result
 
 
-def displace(vector):
-        for i in range(len(vector)-1):
-            vector[i] = vector[i+1]
-        return vector
-
-
 class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
+
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
-        self.tam_values = 400
-        #  Experiments
-        self.experiments = [0, 0, 0, 0]
-        self.color_curve = ['#ff0000', '#55aa00', '#0000ff']
-        if sys.version[0] == '3':
-            port_opendaq = self.cfg.value('port')
-        else:
-            port_opendaq = self.cfg.value('port').toString()
-        #  Plot parameters
-        self.rate = [10, 10, 10]
-        try:
-            self.daq = DAQ(str(port_opendaq))
-            self.model = DAQModel.new(*self.daq.get_info())
-            self.dlg1 = ConfigExperiment(self.model, self.cfg, 0)
-            self.dlg2 = ConfigExperiment(self.model, self.cfg, 1)
-            self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
-        except:
-            port_opendaq = ''
-            for p in [self.actionPlay, self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]:
-                p.setEnabled(False)
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
         for action in nav.actions():
             self.toolBar.addAction(action)
-        self.actionConfigure.triggered.connect(self.get_port)
-        self.Bconfigure1.clicked.connect(lambda: self.configure_experiment(0))
-        self.Bconfigure2.clicked.connect(lambda: self.configure_experiment(1))
-        self.Bconfigure3.clicked.connect(lambda: self.configure_experiment(2))
+        #  Graphs
+        Y, X = [np.zeros(BUFFER_SIZE)] * 2
+        Y[:] = np.nan
+        X[:] = np.nan
+        self.graphs = []
+        colors = ['#ff0000', '#55aa00', '#0000ff']
+        buttons = [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3]
+        combo_boxes = [self.cBenable1, self.cBenable2, self.cBenable3]
+        for i in range(3):
+            self.graphs.append(Graph(exp=0, Y=Y, X=X, rate=10, color=colors[i],
+                                     button=buttons[i], combo_box=combo_boxes[i]))
+        if sys.version[0] == '3':
+            port_opendaq = self.cfg.value('port')
+        else:
+            port_opendaq = self.cfg.value('port').toString()
+        try:
+            self.daq = DAQ(str(port_opendaq))
+        except SerialException:
+            port_opendaq = ''
+            self.daq = ''
+        try:
+            self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
+                self.daq.hw_ver[1], self.daq.fw_ver))
+        except AttributeError:
+            pass
+        for g in self.graphs:
+            g.combo_box.setEnabled(bool(port_opendaq))
+        for p in [self.actionPlay, self.cBenable4]:
+            p.setEnabled(bool(port_opendaq))
+        #  Experiments configuration windows
+        self.dlg1 = ConfigExperiment(self.daq, self.cfg, 0)
+        self.dlg2 = ConfigExperiment(self.daq, self.cfg, 1)
+        self.dlg3 = ConfigExperiment(self.daq, self.cfg, 2)
+        self.dlg4 = ConfigureWave(self.cfg)
+
         self.Bconfigure4.clicked.connect(self.configure_wave)
         self.actionPlay.triggered.connect(self.play)
         self.actionStop.triggered.connect(self.stop)
         self.actionCSV.triggered.connect(self.export_csv)
-        try:
-            self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
-        except:
-            pass
+        self.actionConfigure.triggered.connect(self.get_port)
+        for i, g in enumerate(self.graphs):
+            g.button.clicked.connect(lambda: self.configure_experiment(i))
 
     def stop(self):
         self.actionPlay.toggle()
-        self.actionPlay.setEnabled(True)
         self.actionStop.setEnabled(False)
-        conf_buttons = [self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4]
-        self.actionCSV.setEnabled(True)
-        self.actionConfigure.setEnabled(True)
-        for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4]):
-            p.setEnabled(True)
-            conf_buttons[i].setEnabled(True if p.isChecked() else False)
-        for i in range(3):
-            self.plotWidget.canvas.ax.plot(self.X[i], self.Y[i], color=self.color_curve[i], linewidth=0.7)
+        for wid in [self.actionPlay, self.actionCSV, self.actionConfigure, self.cBenable4]:
+            wid.setEnabled(True)
+        self.Bconfigure4.setEnabled(self.cBenable4.isChecked())
+        for g in self.graphs:
+            g.combo_box.setEnabled(True)
+            g.button.setEnabled(g.combo_box.isChecked())
+            self.plotWidget.canvas.ax.plot(g.Y, color=g.color, linewidth=0.7)
         self.daq.stop()
 
     def play(self):
         self.actionStop.setEnabled(True)
-        for wid in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.Bconfigure1, self.Bconfigure2, self.Bconfigure3, self.Bconfigure4, self.actionCSV, self.actionPlay, self.actionConfigure]:
+        for g in self.graphs:
+            g.combo_box.setEnabled(False)
+            g.button.setEnabled(False)
+        for wid in [self.cBenable4, self.Bconfigure4, self.actionCSV, self.actionPlay,
+                    self.actionConfigure]:
             wid.setEnabled(False)
         self.daq.clear_experiments()
         self.plotWidget.canvas.ax.cla()
         self.plotWidget.canvas.ax.grid(True)
-        self.X = np.zeros((3, self.tam_values))
-        self.Y = np.zeros((3, self.tam_values))
-        self.coef = [0, 0, 0]
-        self.time = [0, 0, 0]
-        self.experiments = [0, 0, 0, 0]
+        Y, X = [np.zeros(BUFFER_SIZE)] * 2
+        Y[:] = np.nan
+        X[:] = np.nan
+        for i, g in enumerate(self.graphs):
+            g.Y = Y
+            g.X = X
+            g.exp = 0
         self.create_experiments()
         self.update()
 
     def export_csv(self):
         fname = QtGui.QFileDialog.getSaveFileName(self, 'Export as CSV')
         fieldnames = ['Time (ms)', 'Voltage (V)']
-        for i, exp in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
-            if exp.isChecked():
-                with open(fname + '_exp%d.csv' % (i + 1) , 'w') as csvfile:
+        for i, g in enumerate(self.graphs):
+            if g.combo_box.isChecked():
+                with open(fname + '_exp%d.csv' % (i + 1), 'w') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
-                    for j in range(self.coef[i]):
-                        writer.writerow({'Time (ms)': self.X[i][j], 'Voltage (V)': self.Y[i][j]})
+                    j = 0
+                    while not(np.isnan(g.Y[j])):
+                        writer.writerow(
+                            {'Time (ms)': g.X[j] * 1000, 'Voltage (V)': g.Y[j]})
+                        j = j + 1
 
-    def get_buffer(self):
-        #  Obtener parametros
-        wave_param = ['wmode_index', 'period', 'offset', 'amplitude', 'time', 'rise_time']
+    def create_buffer(self):
+        wave_param = ['wmode_index', 'period',
+                      'offset', 'amplitude', 'time', 'rise_time']
         param = {}
         for p in wave_param:
             if sys.version[0] == '3':
                 param[p] = int(self.cfg.value(p))
             else:
                 param[p] = self.cfg.value(p).toInt()[0]
-        if param['wmode_index'] != 5:
-            self.tam_buff = 300
-            if param['wmode_index'] == 4:
-                self.interval = int(param['period'])
-            else:
-                self.interval = int(param['period'] / (self.tam_buff + 1))
-            if self.interval < 1:
-                self.interval = 1
-            self.tam_buff = int(param['period'] / self.interval)
-            self.buffer = np.zeros(self.tam_buff)
-        #  Square
+        self.data_size = 300
+        self.interval = int(param['period'] / (self.data_size + 1))
+        if self.interval < 1:
+            self.interval = 1
+        self.data_size = int(param['period'] / self.interval)
+        self.buffer = np.zeros(self.data_size)
         if param['wmode_index'] == 0:
-            points_up = int(param['time'] / self.interval)
-            points_down = int(param['period'] / self.interval) - points_up
-            for i in range(self.tam_buff):
-                if i > points_up:
-                    self.buffer[i] = -(param['amplitude']/2.0) + param['offset']
-                else:
-                    self.buffer[i] = param['amplitude']/2.0 + param['offset']
-        #  Triangle
+            self.create_square(param['time'], param['period'],
+                               param['amplitude'], param['offset'])
         elif param['wmode_index'] == 1:
-            points_up = int(self.tam_buff * param['rise_time'] / param['period'])
-            if points_up == 0:
-                points_up = 1
-            points_down = self.tam_buff - points_up
-            increment = float(param['amplitude']) / float(points_up - 1)
-            for i in range(points_up):
-                self.buffer[i] = round((param['offset'] + increment * i), 2)
-            init = param['offset'] + param['amplitude']
-            increment = float(param['amplitude']) / float(points_down - 1)
-            for i in range(points_down):
-                self.buffer[i + points_up] = round((init - increment * i), 2)
-        #  Sine
+            self.create_triangle(param['rise_time'], param['period'],
+                                 param['amplitude'], param['offset'])
         elif param['wmode_index'] == 2:
-            t = np.arange(0, param['period'], self.interval)
-            self.buffer = np.sin(2 * np.pi / param['period'] * t) * param['amplitude']
-            for i, v in enumerate(self.buffer):
-                self.buffer[i] = v + param['offset']
-        #  Sawtooth
+            self.create_sine(param['period'], param[
+                             'amplitude'], param['offset'])
         elif param['wmode_index'] == 3:
-            increment = float(param['amplitude']) / (self.tam_buff - 1)
-            for i in range(self.tam_buff):
-                self.buffer[i] = param['offset'] + increment * i
-        #  Fixed potential
+            self.create_sawtooth(param['period'], param[
+                                 'amplitude'], param['offset'])
         elif param['wmode_index'] == 4:
-            for i in range(self.tam_buff):
-                self.buffer[i] = param['offset']
-        #  Import CSV
+            self.create_fixed_potential(param['period'], param['offset'])
         else:
             if sys.version[0] == '3':
                 path = str(self.cfg.value("file_path"))
             else:
                 path = self.cfg.value("file_path").toString()
-            rows = 0
-            self.interval = 0.0
-            with open(path, 'rb') as f:
-                reader = csv.DictReader(f)
-                self.tam_buff = 400
-                self.buffer = np.zeros(self.tam_buff)
-                for i, row in enumerate(reader):
-                    if i == 0:
-                        initial_time = float(row['Time (ms)'])
-                    self.buffer[i] = float(row['Voltage (V)'])
-                self.interval = 1000 * (float(row['Time (ms)']) - initial_time) / float(i)
-            self.buffer = self.buffer[:i]
+            self.import_csv(path)
+
+    def create_sine(self, period, amplitude, offset):
+        t = np.arange(0, period, self.interval)
+        self.buffer = np.sin(2 * np.pi / period * t) * amplitude + offset
+
+    def create_sawtooth(self, period, amplitude, offset):
+        self.buffer = amplitude * \
+            (np.linspace(1, 10, self.data_size)) / 10.0 + offset
+
+    def create_square(self, risetime, period, amplitude, offset):
+        duty = float(risetime) / period
+        t = np.linspace(0, period, self.data_size, endpoint=False)
+        self.buffer = amplitude * \
+            (signal.square((2 * np.pi * t / period), duty=duty)) + offset
+
+    def create_triangle(self, risetime, period, amplitude, offset):
+        dutty = float(risetime) / period
+        t = np.arange(0, period, self.interval)
+        self.buffer = amplitude * (signal.sawtooth(2.0 * np.pi / period * t, dutty)) + offset
+
+    def create_fixed_potential(self, period, offset):
+        self.interval = period
+        self.buffer[:] = offset
+
+    def import_csv(self, path):
+        self.interval = 0.0
+        with open(path, 'rb') as f:
+            reader = csv.DictReader(f)
+            self.data_size = 400
+            self.buffer = np.zeros(self.data_size)
+            for i, row in enumerate(reader):
+                if i == 0:
+                    initial_time = float(row['Time (ms)'])
+                self.buffer[i] = float(row['Voltage (V)'])
+            self.interval = abs(
+                float(row['Time (ms)']) - initial_time) / float(i)
+        self.buffer = self.buffer[:i]
 
     def create_experiments(self):
         exp_param = ['type_index', 'mode_index', 'posch', 'negch', 'range_index',
                      'samples', 'rate']
-        for i, p in enumerate([self.cBenable1, self.cBenable2, self.cBenable3]):
-            if p.isChecked():
-                # Obtener los parametros
+        for i, g in enumerate(self.graphs):
+            if g.combo_box.isChecked():
+                #  Parameters
                 param = {}
                 for j, p in enumerate(exp_param):
                     self.cfg.beginReadArray(p)
@@ -229,20 +237,26 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                         param[p] = self.cfg.value(p).toInt()[0]
                     self.cfg.endArray()
                 self.num_points = 0 if param['mode_index'] else 20
-                #  Crear exp
+                g.rate = param['rate']
+                #  Create experiment
                 if param['type_index']:
-                    print(param['posch'], param['negch'], param['range_index'])
-                    self.experiments[i] = self.daq.create_external(mode=ExpMode.ANALOG_IN, clock_input=i+1, edge=0, npoints=self.num_points, continuous=not(param['mode_index']))
+                    g.exp = self.daq.create_external(
+                        mode=ExpMode.ANALOG_IN, clock_input=i + 1, edge=0, npoints=self.num_points, continuous=not(param['mode_index']))
                 else:
-                    self.experiments[i] = self.daq.create_stream(mode=ExpMode.ANALOG_IN, period=param['rate'], npoints=self.num_points, continuous=not(param['mode_index']))
-                self.experiments[i].analog_setup(pinput=int(param['posch']), ninput=int(param['negch']), gain=int(param['range_index']), nsamples=int(param['samples']))
+                    g.exp = self.daq.create_stream(
+                        mode=ExpMode.ANALOG_IN, period=g.rate, npoints=self.num_points, continuous=not(param['mode_index']))
+                g.exp.analog_setup(pinput=int(param['posch']), ninput=int(
+                    param['negch']), gain=int(param['range_index']), nsamples=int(param['samples']))
         if self.cBenable4.isChecked():
-            self.get_buffer()
-            self.experiments[3] = self.daq.create_stream(mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
-            self.experiments[3].load_signal(self.buffer)
+            self.create_buffer()
+            self.waveform = self.daq.create_stream(
+                mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
+            self.waveform.load_signal(self.buffer)
 
     def update(self):
-        play_status = self.cBenable1.isChecked() | self.cBenable2.isChecked() | self.cBenable3.isChecked()
+        play_status = False
+        for g in self.graphs:
+            play_status = play_status | g.combo_box.isChecked()
         if self.actionPlay.isChecked() and play_status:
             self.daq.start()
             self.plot()
@@ -252,30 +266,30 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             QtCore.QTimer.singleShot(10, self.update)
 
     def plot(self):
-        self.plotWidget.canvas.ax.hold(False if self.cBosc.isChecked() else True)
-        for i in range(3):
-            if self.experiments[i] and self.experiments[i].get_mode() == ExpMode.ANALOG_IN:
-                new_data = self.experiments[i].read()
+        i = 0
+        for g in self.graphs:        
+            if g.exp and g.exp.get_mode() == ExpMode.ANALOG_IN:
+                if i:
+                    self.plotWidget.canvas.ax.hold(True)
+                else:
+                    self.plotWidget.canvas.ax.hold(not(self.cBosc.isChecked()))
+                i = i + 1
+                new_data = g.exp.read()
                 for j, d in enumerate(new_data):
-                    if self.coef[i] >= self.tam_values:
-                        self.coef[i] = self.tam_values - 1
-                        displace(self.X[i])
-                        displace(self.Y[i])
-                    self.X[i][self.coef[i]] = self.time[i]
-                    self.Y[i][self.coef[i]] = float(d)
-                    self.coef[i] = self.coef[i] + 1
-                    self.time[i] = self.time[i] + self.rate[i]/1000.0
-                if self.coef[i]:
-                    self.plotWidget.canvas.ax.plot(self.X[i][:self.coef[i]], self.Y[i][:self.coef[i]], color=self.color_curve[i], linewidth=0.7)
-                    self.plotWidget.canvas.ax.grid(True)
-                    self.plotWidget.canvas.draw()
+                    g.Y = np.roll(g.Y, 1)
+                    g.Y[0] = float(d)
+                    g.X = np.roll(g.X, 1)
+                    if np.isnan(g.X[1]):
+                        g.X[0] = 0
+                    else:
+                        g.X[0] = g.X[1] + g.rate / 1000.0
+                self.plotWidget.canvas.ax.plot(
+                    g.X, g.Y, g.color, linewidth=0.7)
+                self.plotWidget.canvas.ax.grid(True)
+                self.plotWidget.canvas.draw()
 
     def configure_wave(self):
-        try:
-            self.dlg_wave.show()
-        except:
-            self.dlg_wave = ConfigureWave(self.cfg)
-            self.dlg_wave.exec_()
+        self.dlg4.show()
 
     def configure_experiment(self, i):
         exp = [self.dlg1, self.dlg2, self.dlg3]
@@ -288,20 +302,18 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         if port_opendaq != '':
             self.cfg.setValue('port', port_opendaq)
             self.daq = DAQ(str(port_opendaq))
-            self.model = DAQModel.new(*self.daq.get_info())
-            self.dlg1 = ConfigExperiment(self.model, self.cfg, 0)
-            self.dlg2 = ConfigExperiment(self.model, self.cfg, 1)
-            self.dlg3 = ConfigExperiment(self.model, self.cfg, 2)
-            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.actionPlay]:
-                p.setEnabled(True)
-            self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (self.daq.hw_ver[1], self.daq.fw_ver))
+            self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
+                self.daq.hw_ver[1], self.daq.fw_ver))
         else:
-            for p in [self.cBenable1, self.cBenable2, self.cBenable3, self.cBenable4, self.actionPlay]:
-                p.setEnabled(False)
             self.statusBar.showMessage("")
+        for g in self.graphs:
+            g.combo_box.setEnabled(bool(port_opendaq))
+        for p in [self.cBenable4, self.actionPlay]:
+            p.setEnabled(bool(port_opendaq))
 
 
 class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
+
     def __init__(self, cfg, parent=None):
         super(ConfigureWave, self).__init__(parent)
         self.setupUi(self)
@@ -323,8 +335,8 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
         self.hide()
 
     def closeEvent(self, evnt):
-            evnt.ignore()
-            self.hide()
+        evnt.ignore()
+        self.hide()
 
     def change(self):
         index_mode = self.cBmode.currentIndex()
@@ -339,29 +351,34 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
                 wid.setCurrentIndex(0)
 
     def select_file(self):
-        self.path = QtGui.QFileDialog.getOpenFileName(self, 'Open file', '', "CSV Files (*.csv)")
+        self.path = QtGui.QFileDialog.getOpenFileName(
+            self, 'Open file', '', "CSV Files (*.csv)")
         self.path = str(self.path)
         self.lb_namefile.setText(os.path.split(str(self.path))[1])
 
+
 class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
-    def __init__(self, model, cfg, exp, parent=None):
+
+    def __init__(self, daq, cfg, exp, parent=None):
         super(ConfigExperiment, self).__init__(parent)
-        self.model = model
-        self.names = ['AGND', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
+        self.daq = daq
+        self.names = ['AGND', 'A1', 'A2', 'A3',
+                      'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
-        self.get_cb_values(cfg, exp)
+        if daq:
+            self.get_cb_values(cfg, exp, daq)
         self.pBconfirm.clicked.connect(lambda: self.update_conf(cfg, exp))
         self.cBtype.currentIndexChanged.connect(self.status_period)
 
     def update_conf(self, cfg, exp):
-        Range = self.cBrange.currentIndex()
+        w_range = self.cBrange.currentIndex()
         rate = self.sBrate.value()
         samples = self.sBsamples.value()
         mode_SE = self.cBtype.currentIndex()
         ch_pos = self.names.index(self.cBposchannel.currentText())
         ch_neg = self.names.index(self.cBnegchannel.currentText())
         exp_param = {"type_index": mode_SE, "mode_index": self.cBmode.currentIndex(),
-                     "posch": ch_pos, "negch": ch_neg, "range_index": Range,
+                     "posch": ch_pos, "negch": ch_neg, "range_index": w_range,
                      "samples": samples, "rate": rate}
         for p in exp_param.keys():
             cfg.beginWriteArray(p)
@@ -370,23 +387,27 @@ class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
             cfg.endArray()
         self.hide()
 
-    def get_cb_values(self, cfg, exp):
-        for ninput in self.model.adc.ninputs:
-            self.cBnegchannel.addItem(self.names[ninput] if ninput < 9 else self.names[9])
-        for pinput in self.model.adc.pinputs:
-            self.cBposchannel.addItem(self.names[pinput] if pinput < 9 else self.names[9])
-        for gain in self.model.adc.pga_gains:
+    def get_cb_values(self, cfg, exp, daq):
+        model = DAQModel.new(*daq.get_info())
+        for ninput in model.adc.ninputs:
+            self.cBnegchannel.addItem(
+                self.names[ninput] if ninput < 9 else self.names[9])
+        for pinput in model.adc.pinputs:
+            self.cBposchannel.addItem(
+                self.names[pinput] if pinput < 9 else self.names[9])
+        for gain in model.adc.pga_gains:
             self.cBrange.addItem(str(gain))
 
     def closeEvent(self, evnt):
-            evnt.ignore()
-            self.hide()
+        evnt.ignore()
+        self.hide()
 
     def status_period(self):
         self.sBrate.setEnabled(False if self.cBtype.currentIndex() else True)
 
 
 class Configuration(QtGui.QDialog, config.Ui_MainWindow):
+
     def __init__(self, parent=None):
         super(Configuration, self).__init__(parent)
         self.setupUi(self)
@@ -398,6 +419,18 @@ class Configuration(QtGui.QDialog, config.Ui_MainWindow):
         port = self.cbport.currentText()
         self.close()
         return port
+
+
+class Graph(object):
+
+    def __init__(self, exp, Y, X, rate, color, button, combo_box):
+        self.exp = exp
+        self.Y = Y
+        self.X = X
+        self.rate = rate
+        self.color = color
+        self.button = button
+        self.combo_box = combo_box
 
 
 def main():

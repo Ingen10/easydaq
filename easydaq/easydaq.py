@@ -189,8 +189,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBosc.sizePolicy().hasHeightForWidth())
         self.cBosc.setSizePolicy(sizePolicy)
-        self.cBosc.setMinimumSize(QtCore.QSize(130, 22))
-        self.cBosc.setMaximumSize(QtCore.QSize(130, 22))
+        self.cBosc.setMinimumSize(QtCore.QSize(165, 22))
+        self.cBosc.setMaximumSize(QtCore.QSize(165, 22))
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -264,15 +264,15 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "Waveform", None))
         self.cBenable4.setText(_translate("MainWindow", "Enable", None))
         self.Bconfigure4.setText(_translate("MainWindow", "Configure", None))
-        self.cBosc.setText(_translate("MainWindow", "Oscilloscope", None))
+        self.cBosc.setText(_translate("MainWindow", "Oscilloscope mode", None))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar", None))
         self.actionConfigure.setText(_translate("MainWindow", "Configure", None))
         self.actionPlay.setText(_translate("MainWindow", "play", None))
         self.actionStop.setText(_translate("MainWindow", "stop", None))
         self.actionCSV.setText(_translate("MainWindow", "CSV", None))
 
-from .widgets import MPL_Widget
-from . import res_rc
+from widgets import MPL_Widget
+import res_rc
 
 if __name__ == "__main__":
     import sys

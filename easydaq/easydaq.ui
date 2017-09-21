@@ -360,13 +360,13 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>130</width>
+            <width>165</width>
             <height>22</height>
            </size>
           </property>
           <property name="maximumSize">
            <size>
-            <width>130</width>
+            <width>165</width>
             <height>22</height>
            </size>
           </property>
@@ -383,7 +383,7 @@
            <bool>false</bool>
           </property>
           <property name="text">
-           <string>Oscilloscope</string>
+           <string>Oscilloscope mode</string>
           </property>
          </widget>
         </item>

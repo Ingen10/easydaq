@@ -100,6 +100,7 @@ class Ui_MainWindow(object):
         self.sBoffset.setSizePolicy(sizePolicy)
         self.sBoffset.setMinimumSize(QtCore.QSize(130, 27))
         self.sBoffset.setDecimals(3)
+        self.sBoffset.setMinimum(-4.0)
         self.sBoffset.setMaximum(4.0)
         self.sBoffset.setSingleStep(0.1)
         self.sBoffset.setProperty("value", 0.0)
