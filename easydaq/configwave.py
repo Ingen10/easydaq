@@ -16,17 +16,20 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
+
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(260, 213)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.MinimumExpanding)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding,
+                                       QtGui.QSizePolicy.MinimumExpanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
@@ -341,8 +344,12 @@ class Ui_MainWindow(object):
         self.sWperiod2.setCurrentIndex(0)
         self.stackedWidget.setCurrentIndex(0)
         self.stackedWidget_2.setCurrentIndex(0)
-        QtCore.QObject.connect(self.cBmode, QtCore.SIGNAL(_fromUtf8("currentIndexChanged(int)")), self.stackedWidget.setCurrentIndex)
-        QtCore.QObject.connect(self.cBmode, QtCore.SIGNAL(_fromUtf8("currentIndexChanged(int)")), self.stackedWidget_2.setCurrentIndex)
+        QtCore.QObject.connect(self.cBmode,
+                               QtCore.SIGNAL(_fromUtf8("currentIndexChanged(int)")),
+                               self.stackedWidget.setCurrentIndex)
+        QtCore.QObject.connect(self.cBmode,
+                               QtCore.SIGNAL(_fromUtf8("currentIndexChanged(int)")),
+                               self.stackedWidget_2.setCurrentIndex)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -373,4 +380,3 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
-

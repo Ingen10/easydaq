@@ -1,14 +1,13 @@
 import warnings
 import matplotlib.cbook
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt4.QtGui import QWidget, QVBoxLayout
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4 import NavigationToolbar2QT
 from matplotlib.figure import Figure
 
 
-warnings.filterwarnings("ignore",category=matplotlib.cbook.mplDeprecation)
+warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 
 class MyMplCanvas(FigureCanvas):
@@ -37,10 +36,8 @@ class MPL_Widget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.canvas = MyMplCanvas()
-        #self.toolbar = NavigationToolbar(self.canvas, self.canvas)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.canvas)
-        #self.vbox.addWidget(self.toolbar)
         self.setLayout(self.vbox)
 
 

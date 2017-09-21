@@ -8,10 +8,10 @@ import glob
 import os
 import csv
 from serial import SerialException
-from scipy import signal
 
 import numpy as np
 import serial
+from scipy import signal
 from PyQt4 import QtCore, QtGui
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
@@ -48,7 +48,6 @@ def list_serial_ports():
 
 
 class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
-
     def __init__(self, parent=None):
         QtGui.QMainWindow.__init__(self, parent)
         self.setupUi(self)
@@ -241,16 +240,20 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 #  Create experiment
                 if param['type_index']:
                     g.exp = self.daq.create_external(
-                        mode=ExpMode.ANALOG_IN, clock_input=i + 1, edge=0, npoints=self.num_points, continuous=not(param['mode_index']))
+                        mode=ExpMode.ANALOG_IN, clock_input=i + 1, edge=0,
+                        npoints=self.num_points, continuous=not(param['mode_index']))
                 else:
                     g.exp = self.daq.create_stream(
-                        mode=ExpMode.ANALOG_IN, period=g.rate, npoints=self.num_points, continuous=not(param['mode_index']))
+                        mode=ExpMode.ANALOG_IN, period=g.rate, npoints=self.num_points,
+                        continuous=not(param['mode_index']))
                 g.exp.analog_setup(pinput=int(param['posch']), ninput=int(
-                    param['negch']), gain=int(param['range_index']), nsamples=int(param['samples']))
+                    param['negch']), gain=int(param['range_index']),
+                    nsamples=int(param['samples']))
         if self.cBenable4.isChecked():
             self.create_buffer()
             self.waveform = self.daq.create_stream(
-                mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer), continuous=True)
+                mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer),
+                continuous=True)
             self.waveform.load_signal(self.buffer)
 
     def update(self):
@@ -267,7 +270,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def plot(self):
         i = 0
-        for g in self.graphs:        
+        for g in self.graphs:
             if g.exp and g.exp.get_mode() == ExpMode.ANALOG_IN:
                 if i:
                     self.plotWidget.canvas.ax.hold(True)
@@ -293,6 +296,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def configure_experiment(self, i):
         exp = [self.dlg1, self.dlg2, self.dlg3]
+        exp[i].daq = self.daq
         exp[i].show()
 
     def get_port(self):
@@ -313,7 +317,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
 
 class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
-
     def __init__(self, cfg, parent=None):
         super(ConfigureWave, self).__init__(parent)
         self.setupUi(self)
@@ -358,7 +361,6 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
 
 
 class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
-
     def __init__(self, daq, cfg, exp, parent=None):
         super(ConfigExperiment, self).__init__(parent)
         self.daq = daq
@@ -407,7 +409,6 @@ class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
 
 
 class Configuration(QtGui.QDialog, config.Ui_MainWindow):
-
     def __init__(self, parent=None):
         super(Configuration, self).__init__(parent)
         self.setupUi(self)
@@ -422,7 +423,6 @@ class Configuration(QtGui.QDialog, config.Ui_MainWindow):
 
 
 class Graph(object):
-
     def __init__(self, exp, Y, X, rate, color, button, combo_box):
         self.exp = exp
         self.Y = Y
