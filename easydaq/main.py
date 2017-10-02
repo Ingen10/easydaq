@@ -72,6 +72,17 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             port_opendaq = self.cfg.value('port')
         else:
             port_opendaq = self.cfg.value('port').toString()
+
+        exp_param = {"type_index": 0, "mode_index": 0,
+                     "posch": 1, "negch": 0, "range_index": 0,
+                     "samples": 200, "rate": 10}
+        for p in exp_param.keys():
+            self.cfg.beginWriteArray(p)
+            for exp in range(3):
+                self.cfg.setArrayIndex(exp)
+                self.cfg.setValue(p, exp_param[p])
+            self.cfg.endArray()
+            
         try:
             self.daq = DAQ(str(port_opendaq))
         except SerialException:
@@ -97,8 +108,10 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.actionStop.triggered.connect(self.stop)
         self.actionCSV.triggered.connect(self.export_csv)
         self.actionConfigure.triggered.connect(self.get_port)
-        for i, g in enumerate(self.graphs):
-            g.button.clicked.connect(lambda: self.configure_experiment(i))
+        self.graphs[0].button.clicked.connect(lambda: self.configure_experiment(0))
+        self.graphs[1].button.clicked.connect(lambda: self.configure_experiment(1))
+        self.graphs[2].button.clicked.connect(lambda: self.configure_experiment(2))
+
 
     def stop(self):
         self.actionPlay.toggle()
@@ -245,7 +258,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 else:
                     g.exp = self.daq.create_stream(
                         mode=ExpMode.ANALOG_IN, period=g.rate, npoints=self.num_points,
-                        continuous=not(param['mode_index']))
+                        continuous=not(bool(param['mode_index'])))
                 g.exp.analog_setup(pinput=int(param['posch']), ninput=int(
                     param['negch']), gain=int(param['range_index']),
                     nsamples=int(param['samples']))
