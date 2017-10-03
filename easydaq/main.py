@@ -224,7 +224,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
     def import_csv(self, path):
         self.interval = 0.0
-        with open(path, 'rb') as f:
+        with open(path, 'r') as f:
             reader = csv.DictReader(f)
             self.data_size = 400
             self.buffer = np.zeros(self.data_size)
@@ -232,8 +232,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 if i == 0:
                     initial_time = float(row['Time (ms)'])
                 self.buffer[i] = float(row['Voltage (V)'])
-            self.interval = abs(
-                float(row['Time (ms)']) - initial_time) / float(i)
+            self.interval = int(abs(float(row['Time (ms)']) - initial_time) / float(i))
         self.buffer = self.buffer[:i]
 
     def create_experiments(self):
