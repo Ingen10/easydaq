@@ -52,6 +52,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         QtGui.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
+        print(self.cfg.fileName())
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
@@ -114,16 +115,19 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
 
 
     def stop(self):
+        self.daq.stop()
+        for g in self.graphs:
+            g.combo_box.setEnabled(True)
+            g.button.setEnabled(g.combo_box.isChecked())
+            self.plotWidget.canvas.ax.plot(g.Y, color=g.color, linewidth=0.7)
+        self.daq.flush()
+        self.daq.clear_experiments()
         self.actionPlay.toggle()
         self.actionStop.setEnabled(False)
         for wid in [self.actionPlay, self.actionCSV, self.actionConfigure, self.cBenable4]:
             wid.setEnabled(True)
         self.Bconfigure4.setEnabled(self.cBenable4.isChecked())
-        for g in self.graphs:
-            g.combo_box.setEnabled(True)
-            g.button.setEnabled(g.combo_box.isChecked())
-            self.plotWidget.canvas.ax.plot(g.Y, color=g.color, linewidth=0.7)
-        self.daq.stop()
+
 
     def play(self):
         self.actionStop.setEnabled(True)
@@ -251,18 +255,19 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.num_points = 0 if param['mode_index'] else 20
                 g.rate = param['rate']
                 #  Create experiment
-                if param['type_index']:
+                if int(param['type_index']):
                     g.exp = self.daq.create_external(
                         mode=ExpMode.ANALOG_IN, clock_input=i + 1, edge=0,
                         npoints=self.num_points, continuous=not(param['mode_index']))
                 else:
                     g.exp = self.daq.create_stream(
-                        mode=ExpMode.ANALOG_IN, period=g.rate, npoints=self.num_points,
+                        mode=ExpMode.ANALOG_IN, period=int(g.rate), npoints=self.num_points,
                         continuous=not(bool(param['mode_index'])))
                 g.exp.analog_setup(pinput=int(param['posch']), ninput=int(
                     param['negch']), gain=int(param['range_index']),
                     nsamples=int(param['samples']))
         if self.cBenable4.isChecked():
+            print('3')
             self.create_buffer()
             self.waveform = self.daq.create_stream(
                 mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer),
@@ -294,11 +299,12 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 for j, d in enumerate(new_data):
                     g.Y = np.roll(g.Y, 1)
                     g.Y[0] = float(d)
+                    print(g.Y[0])
                     g.X = np.roll(g.X, 1)
                     if np.isnan(g.X[1]):
                         g.X[0] = 0
                     else:
-                        g.X[0] = g.X[1] + g.rate / 1000.0
+                        g.X[0] = g.X[1] + float(g.rate) / 1000.0
                 self.plotWidget.canvas.ax.plot(
                     g.X, g.Y, g.color, linewidth=0.7)
                 self.plotWidget.canvas.ax.grid(True)
@@ -380,6 +386,7 @@ class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
         self.names = ['AGND', 'A1', 'A2', 'A3',
                       'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
+        print('Hola 1')
         if daq:
             self.get_cb_values(cfg, exp, daq)
         self.pBconfirm.clicked.connect(lambda: self.update_conf(cfg, exp))
