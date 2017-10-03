@@ -82,7 +82,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 self.cfg.setArrayIndex(exp)
                 self.cfg.setValue(p, exp_param[p])
             self.cfg.endArray()
-            
         try:
             self.daq = DAQ(str(port_opendaq))
         except SerialException:
@@ -112,7 +111,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.graphs[1].button.clicked.connect(lambda: self.configure_experiment(1))
         self.graphs[2].button.clicked.connect(lambda: self.configure_experiment(2))
 
-
     def stop(self):
         self.daq.stop()
         for g in self.graphs:
@@ -126,7 +124,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         for wid in [self.actionPlay, self.actionCSV, self.actionConfigure, self.cBenable4]:
             wid.setEnabled(True)
         self.Bconfigure4.setEnabled(self.cBenable4.isChecked())
-
 
     def play(self):
         self.actionStop.setEnabled(True)
