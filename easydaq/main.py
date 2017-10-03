@@ -52,7 +52,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         QtGui.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
-        print(self.cfg.fileName())
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
@@ -267,7 +266,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                     param['negch']), gain=int(param['range_index']),
                     nsamples=int(param['samples']))
         if self.cBenable4.isChecked():
-            print('3')
             self.create_buffer()
             self.waveform = self.daq.create_stream(
                 mode=ExpMode.ANALOG_OUT, period=self.interval, npoints=len(self.buffer),
@@ -299,7 +297,6 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 for j, d in enumerate(new_data):
                     g.Y = np.roll(g.Y, 1)
                     g.Y[0] = float(d)
-                    print(g.Y[0])
                     g.X = np.roll(g.X, 1)
                     if np.isnan(g.X[1]):
                         g.X[0] = 0
@@ -386,7 +383,6 @@ class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
         self.names = ['AGND', 'A1', 'A2', 'A3',
                       'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
-        print('Hola 1')
         if daq:
             self.get_cb_values(cfg, exp, daq)
         self.pBconfirm.clicked.connect(lambda: self.update_conf(cfg, exp))
