@@ -323,6 +323,8 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             self.daq = DAQ(str(port_opendaq))
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
                 self.daq.hw_ver[1], self.daq.fw_ver))
+            for exp, d in enumerate([self.dlg1, self.dlg2, self.dlg3]):
+                d.get_cb_values(self.cfg, exp, self.daq)
         else:
             self.statusBar.showMessage("")
         for g in self.graphs:
