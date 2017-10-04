@@ -1,0 +1,8 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>resources/config.png</file>
+    <file>resources/CSV.png</file>
+    <file>resources/play.png</file>
+    <file>resources/stop.png</file>
+</qresource>
+</RCC>
