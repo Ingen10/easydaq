@@ -13,6 +13,7 @@ import numpy as np
 import serial
 from scipy import signal
 from PyQt4 import QtCore, QtGui
+from PyQt4.QtGui import QPalette, QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
@@ -56,7 +57,12 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
         for action in nav.actions():
-            self.toolBar.addAction(action)
+            if action.text() != 'Subplots': 
+                self.toolBar.addAction(action)
+        icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png",
+                 ":/resources/customize.png", ":/resources/save.png"]
+        for i, action in enumerate(self.toolBar.actions()[5:10]):
+            action.setIcon(QIcon(icons[i]))
         #  Graphs
         Y, X = [np.zeros(BUFFER_SIZE)] * 2
         Y[:] = np.nan

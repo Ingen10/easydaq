@@ -4,5 +4,10 @@
     <file>resources/CSV.png</file>
     <file>resources/play.png</file>
     <file>resources/stop.png</file>
+    <file>resources/customize.png</file>
+    <file>resources/house.png</file>
+    <file>resources/pan.png</file>
+    <file>resources/save.png</file>
+    <file>resources/zoom.png</file>
 </qresource>
 </RCC>
