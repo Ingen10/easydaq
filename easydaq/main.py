@@ -17,11 +17,11 @@ from PyQt4.QtGui import QPalette, QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
-from .widgets import NavigationToolbar
-from . import easydaq
-from . import config
-from . import configurechart
-from . import configwave
+from easydaq.widgets import NavigationToolbar
+from easydaq import easydaq
+from easydaq import config
+from easydaq import configurechart
+from easydaq import configwave
 
 BUFFER_SIZE = 400
 
@@ -56,7 +56,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
-        for action in nav.actions():
+        for action in nav.actions()[:-1]:
             if action.text() != 'Subplots': 
                 self.toolBar.addAction(action)
         icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png",

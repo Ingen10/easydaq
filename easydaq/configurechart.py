@@ -16,25 +16,23 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
-
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(270, 282)
+        MainWindow.resize(244, 282)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(259, 282))
-        MainWindow.setMaximumSize(QtCore.QSize(270, 290))
+        MainWindow.setMinimumSize(QtCore.QSize(244, 282))
+        MainWindow.setMaximumSize(QtCore.QSize(244, 282))
         self.formLayout = QtGui.QFormLayout(MainWindow)
         self.formLayout.setObjectName(_fromUtf8("formLayout"))
         self.label_7 = QtGui.QLabel(MainWindow)
@@ -50,7 +48,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBtype.sizePolicy().hasHeightForWidth())
         self.cBtype.setSizePolicy(sizePolicy)
-        self.cBtype.setMinimumSize(QtCore.QSize(125, 27))
+        self.cBtype.setMinimumSize(QtCore.QSize(110, 27))
         self.cBtype.setMaximumSize(QtCore.QSize(110, 27))
         self.cBtype.setObjectName(_fromUtf8("cBtype"))
         self.cBtype.addItem(_fromUtf8(""))
@@ -71,7 +69,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBmode.sizePolicy().hasHeightForWidth())
         self.cBmode.setSizePolicy(sizePolicy)
-        self.cBmode.setMinimumSize(QtCore.QSize(125, 27))
+        self.cBmode.setMinimumSize(QtCore.QSize(100, 27))
         self.cBmode.setMaximumSize(QtCore.QSize(110, 27))
         self.cBmode.setObjectName(_fromUtf8("cBmode"))
         self.cBmode.addItem(_fromUtf8(""))
@@ -92,7 +90,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBposchannel.sizePolicy().hasHeightForWidth())
         self.cBposchannel.setSizePolicy(sizePolicy)
-        self.cBposchannel.setMinimumSize(QtCore.QSize(125, 27))
+        self.cBposchannel.setMinimumSize(QtCore.QSize(110, 27))
         self.cBposchannel.setObjectName(_fromUtf8("cBposchannel"))
         self.formLayout.setWidget(2, QtGui.QFormLayout.FieldRole, self.cBposchannel)
         self.label_3 = QtGui.QLabel(MainWindow)
@@ -110,7 +108,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBnegchannel.sizePolicy().hasHeightForWidth())
         self.cBnegchannel.setSizePolicy(sizePolicy)
-        self.cBnegchannel.setMinimumSize(QtCore.QSize(125, 27))
+        self.cBnegchannel.setMinimumSize(QtCore.QSize(110, 27))
         self.cBnegchannel.setObjectName(_fromUtf8("cBnegchannel"))
         self.formLayout.setWidget(3, QtGui.QFormLayout.FieldRole, self.cBnegchannel)
         self.label_5 = QtGui.QLabel(MainWindow)
@@ -128,7 +126,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.cBrange.sizePolicy().hasHeightForWidth())
         self.cBrange.setSizePolicy(sizePolicy)
-        self.cBrange.setMinimumSize(QtCore.QSize(125, 27))
+        self.cBrange.setMinimumSize(QtCore.QSize(110, 27))
         self.cBrange.setObjectName(_fromUtf8("cBrange"))
         self.formLayout.setWidget(4, QtGui.QFormLayout.FieldRole, self.cBrange)
         self.label_2 = QtGui.QLabel(MainWindow)
@@ -146,7 +144,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sBrate.sizePolicy().hasHeightForWidth())
         self.sBrate.setSizePolicy(sizePolicy)
-        self.sBrate.setMinimumSize(QtCore.QSize(125, 27))
+        self.sBrate.setMinimumSize(QtCore.QSize(110, 27))
         self.sBrate.setMinimum(2)
         self.sBrate.setMaximum(65536)
         self.sBrate.setProperty("value", 10)
@@ -158,7 +156,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.pBconfirm.sizePolicy().hasHeightForWidth())
         self.pBconfirm.setSizePolicy(sizePolicy)
-        self.pBconfirm.setMinimumSize(QtCore.QSize(125, 27))
+        self.pBconfirm.setMinimumSize(QtCore.QSize(110, 27))
         self.pBconfirm.setObjectName(_fromUtf8("pBconfirm"))
         self.formLayout.setWidget(8, QtGui.QFormLayout.FieldRole, self.pBconfirm)
         self.label_4 = QtGui.QLabel(MainWindow)
@@ -176,7 +174,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.sBsamples.sizePolicy().hasHeightForWidth())
         self.sBsamples.setSizePolicy(sizePolicy)
-        self.sBsamples.setMinimumSize(QtCore.QSize(125, 27))
+        self.sBsamples.setMinimumSize(QtCore.QSize(110, 27))
         self.sBsamples.setMaximum(999)
         self.sBsamples.setProperty("value", 200)
         self.sBsamples.setObjectName(_fromUtf8("sBsamples"))
@@ -186,7 +184,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "Experiment Configuration", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Configuration", None))
         self.label_7.setText(_translate("MainWindow", "Type", None))
         self.cBtype.setItemText(0, _translate("MainWindow", "Stream", None))
         self.cBtype.setItemText(1, _translate("MainWindow", "Extern", None))
@@ -209,3 +207,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+

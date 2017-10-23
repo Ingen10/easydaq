@@ -7,8 +7,6 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui
-from .widgets import MPL_Widget
-from . import res_rc
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -18,13 +16,11 @@ except AttributeError:
 
 try:
     _encoding = QtGui.QApplication.UnicodeUTF8
-
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig, _encoding)
 except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -167,8 +163,7 @@ class Ui_MainWindow(object):
         self.Bconfigure4.setMinimumSize(QtCore.QSize(100, 27))
         self.Bconfigure4.setObjectName(_fromUtf8("Bconfigure4"))
         self.verticalLayout.addWidget(self.Bconfigure4)
-        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum,
-                                       QtGui.QSizePolicy.Expanding)
+        spacerItem = QtGui.QSpacerItem(20, 40, QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Expanding)
         self.verticalLayout.addItem(spacerItem)
         self.horizontalLayout.addLayout(self.verticalLayout)
         self.verticalLayout_2 = QtGui.QVBoxLayout()
@@ -186,8 +181,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_2.addWidget(self.plotWidget)
         self.horizontalLayout_2 = QtGui.QHBoxLayout()
         self.horizontalLayout_2.setObjectName(_fromUtf8("horizontalLayout_2"))
-        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding,
-                                        QtGui.QSizePolicy.Minimum)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_2.addItem(spacerItem1)
         self.cBosc = QtGui.QCheckBox(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
@@ -223,28 +217,24 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusBar)
         self.actionConfigure = QtGui.QAction(MainWindow)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/config.png")),
-                       QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/config.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionConfigure.setIcon(icon)
         self.actionConfigure.setObjectName(_fromUtf8("actionConfigure"))
         self.actionPlay = QtGui.QAction(MainWindow)
         self.actionPlay.setCheckable(True)
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/play.png")),
-                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/play.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionPlay.setIcon(icon1)
         self.actionPlay.setObjectName(_fromUtf8("actionPlay"))
         self.actionStop = QtGui.QAction(MainWindow)
         self.actionStop.setEnabled(False)
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/stop.png")),
-                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon2.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/stop.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionStop.setIcon(icon2)
         self.actionStop.setObjectName(_fromUtf8("actionStop"))
         self.actionCSV = QtGui.QAction(MainWindow)
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/CSV.png")),
-                        QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon3.addPixmap(QtGui.QPixmap(_fromUtf8(":/resources/CSV.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCSV.setIcon(icon3)
         self.actionCSV.setObjectName(_fromUtf8("actionCSV"))
         self.toolBar.addAction(self.actionConfigure)
@@ -254,14 +244,10 @@ class Ui_MainWindow(object):
         self.toolBar.addSeparator()
 
         self.retranslateUi(MainWindow)
-        QtCore.QObject.connect(self.cBenable1, QtCore.SIGNAL(_fromUtf8("clicked(bool)")),
-                               self.Bconfigure1.setEnabled)
-        QtCore.QObject.connect(self.cBenable2, QtCore.SIGNAL(_fromUtf8("clicked(bool)")),
-                               self.Bconfigure2.setEnabled)
-        QtCore.QObject.connect(self.cBenable3, QtCore.SIGNAL(_fromUtf8("clicked(bool)")),
-                               self.Bconfigure3.setEnabled)
-        QtCore.QObject.connect(self.cBenable4, QtCore.SIGNAL(_fromUtf8("clicked(bool)")),
-                               self.Bconfigure4.setEnabled)
+        QtCore.QObject.connect(self.cBenable1, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure1.setEnabled)
+        QtCore.QObject.connect(self.cBenable2, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure2.setEnabled)
+        QtCore.QObject.connect(self.cBenable3, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure3.setEnabled)
+        QtCore.QObject.connect(self.cBenable4, QtCore.SIGNAL(_fromUtf8("clicked(bool)")), self.Bconfigure4.setEnabled)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -285,6 +271,9 @@ class Ui_MainWindow(object):
         self.actionStop.setText(_translate("MainWindow", "stop", None))
         self.actionCSV.setText(_translate("MainWindow", "CSV", None))
 
+from widgets import MPL_Widget
+import res_rc
+
 if __name__ == "__main__":
     import sys
     app = QtGui.QApplication(sys.argv)
@@ -293,3 +282,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
