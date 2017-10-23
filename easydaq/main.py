@@ -17,11 +17,11 @@ from PyQt4.QtGui import QPalette, QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
-from easydaq.widgets import NavigationToolbar
-from easydaq import easydaq
-from easydaq import config
-from easydaq import configurechart
-from easydaq import configwave
+from .widgets import NavigationToolbar
+from . import easydaq
+from . import config
+from . import configurechart
+from . import configwave
 
 BUFFER_SIZE = 400
 
