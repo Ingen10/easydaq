@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'easydaq/config.ui'
+# Form implementation generated from reading ui file 'daqcontrol/config.ui'
 #
 # Created by: PyQt5 UI code generator 5.9
 #
@@ -11,15 +11,14 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(240, 101)
-        MainWindow.setMinimumSize(QtCore.QSize(240, 100))
+        MainWindow.resize(240, 120)
+        MainWindow.setMinimumSize(QtCore.QSize(240, 120))
         MainWindow.setMaximumSize(QtCore.QSize(250, 120))
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-        self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
-        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.verticalLayout = QtWidgets.QVBoxLayout(MainWindow)
+        self.verticalLayout.setObjectName("verticalLayout")
+        self.gridLayout = QtWidgets.QGridLayout()
         self.gridLayout.setObjectName("gridLayout")
-        self.label = QtWidgets.QLabel(self.centralwidget)
+        self.label = QtWidgets.QLabel(MainWindow)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -31,14 +30,15 @@ class Ui_MainWindow(object):
         self.label.setFont(font)
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
-        self.connectButton = QtWidgets.QPushButton(self.centralwidget)
+        self.connectButton = QtWidgets.QPushButton(MainWindow)
         self.connectButton.setMinimumSize(QtCore.QSize(70, 27))
         self.connectButton.setMaximumSize(QtCore.QSize(70, 27))
         self.connectButton.setObjectName("connectButton")
         self.gridLayout.addWidget(self.connectButton, 2, 1, 1, 1)
-        self.cbport = QtWidgets.QComboBox(self.centralwidget)
+        self.cbport = QtWidgets.QComboBox(MainWindow)
         self.cbport.setObjectName("cbport")
         self.gridLayout.addWidget(self.cbport, 1, 0, 1, 2)
+        self.verticalLayout.addLayout(self.gridLayout)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
