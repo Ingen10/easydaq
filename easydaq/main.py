@@ -152,11 +152,11 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
         self.update()
 
     def export_csv(self):
-        fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')
+        fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')[0]
         fieldnames = ['Time (ms)', 'Voltage (V)']
         for i, g in enumerate(self.graphs):
             if g.combo_box.isChecked():
-                with open(fname + '_exp%d.csv' % (i + 1), 'w') as csvfile:
+                with open('%s_exp%d.csv' % (fname, (i + 1)), 'w') as csvfile:
                     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                     writer.writeheader()
                     j = 0
