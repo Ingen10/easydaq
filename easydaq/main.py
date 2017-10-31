@@ -12,8 +12,8 @@ from serial import SerialException
 import numpy as np
 import serial
 from scipy import signal
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtGui import QPalette, QIcon
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtGui import QPalette, QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
@@ -48,9 +48,9 @@ def list_serial_ports():
     return result
 
 
-class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
+class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
     def __init__(self, parent=None):
-        QtGui.QMainWindow.__init__(self, parent)
+        QtWidgets.QMainWindow.__init__(self, parent)
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
         #  Toolbar
@@ -74,10 +74,9 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         for i in range(3):
             self.graphs.append(Graph(exp=0, Y=Y, X=X, rate=10, color=colors[i],
                                      button=buttons[i], combo_box=combo_boxes[i]))
-        if sys.version[0] == '3':
-            port_opendaq = self.cfg.value('port')
-        else:
-            port_opendaq = self.cfg.value('port').toString()
+
+        port_opendaq = self.cfg.value('port')
+
 
         exp_param = {"type_index": 0, "mode_index": 0,
                      "posch": 1, "negch": 0, "range_index": 0,
@@ -153,7 +152,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         self.update()
 
     def export_csv(self):
-        fname = QtGui.QFileDialog.getSaveFileName(self, 'Export as CSV')
+        fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')
         fieldnames = ['Time (ms)', 'Voltage (V)']
         for i, g in enumerate(self.graphs):
             if g.combo_box.isChecked():
@@ -171,10 +170,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                       'offset', 'amplitude', 'time', 'rise_time']
         param = {}
         for p in wave_param:
-            if sys.version[0] == '3':
-                param[p] = int(self.cfg.value(p))
-            else:
-                param[p] = self.cfg.value(p).toInt()[0]
+            param[p] = int(self.cfg.value(p))
         self.data_size = 300
         self.interval = int(param['period'] / (self.data_size + 1))
         if self.interval < 1:
@@ -196,10 +192,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
         elif param['wmode_index'] == 4:
             self.create_fixed_potential(param['period'], param['offset'])
         else:
-            if sys.version[0] == '3':
-                path = str(self.cfg.value("file_path"))
-            else:
-                path = self.cfg.value("file_path").toString()
+            path = str(self.cfg.value("file_path"))
             self.import_csv(path)
 
     def create_sine(self, period, amplitude, offset):
@@ -248,10 +241,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
                 for j, p in enumerate(exp_param):
                     self.cfg.beginReadArray(p)
                     self.cfg.setArrayIndex(i)
-                    if sys.version[0] == '3':
-                        param[p] = self.cfg.value(p)
-                    else:
-                        param[p] = self.cfg.value(p).toInt()[0]
+                    param[p] = self.cfg.value(p)
                     self.cfg.endArray()
                 self.num_points = 0 if param['mode_index'] else 20
                 g.rate = param['rate']
@@ -336,7 +326,7 @@ class MyApp(QtGui.QMainWindow, easydaq.Ui_MainWindow):
             p.setEnabled(bool(port_opendaq))
 
 
-class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
+class ConfigureWave(QtWidgets.QDialog, configwave.Ui_MainWindow):
     def __init__(self, cfg, parent=None):
         super(ConfigureWave, self).__init__(parent)
         self.setupUi(self)
@@ -380,7 +370,7 @@ class ConfigureWave(QtGui.QDialog, configwave.Ui_MainWindow):
         self.lb_namefile.setText(os.path.split(str(self.path))[1])
 
 
-class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
+class ConfigExperiment(QtWidgets.QDialog, configurechart.Ui_MainWindow):
     def __init__(self, daq, cfg, exp, parent=None):
         super(ConfigExperiment, self).__init__(parent)
         self.daq = daq
@@ -428,7 +418,7 @@ class ConfigExperiment(QtGui.QDialog, configurechart.Ui_MainWindow):
         self.sBrate.setEnabled(False if self.cBtype.currentIndex() else True)
 
 
-class Configuration(QtGui.QDialog, config.Ui_MainWindow):
+class Configuration(QtWidgets.QDialog, config.Ui_MainWindow):
     def __init__(self, parent=None):
         super(Configuration, self).__init__(parent)
         self.setupUi(self)
@@ -454,7 +444,7 @@ class Graph(object):
 
 
 def main():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     dlg = MyApp()
     dlg.show()
     sys.exit(app.exec_())
