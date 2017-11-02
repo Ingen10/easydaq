@@ -326,7 +326,7 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
             p.setEnabled(bool(port_opendaq))
 
 
-class ConfigureWave(QtWidgets.QDialog, configwave.Ui_MainWindow):
+class ConfigureWave(QtWidgets.QMainWindow, configwave.Ui_mainWindow):
     def __init__(self, cfg, parent=None):
         super(ConfigureWave, self).__init__(parent)
         self.setupUi(self)
@@ -353,21 +353,21 @@ class ConfigureWave(QtWidgets.QDialog, configwave.Ui_MainWindow):
 
     def change(self):
         index_mode = self.cBmode.currentIndex()
-        for wid in [self.sWDC, self.sWDC2]:
-            wid.setCurrentIndex(1 if index_mode == 5 else 0)
-        for wid in [self.sWperiod1, self.sWperiod2, self.sWamp1, self.sWamp2]:
-            if index_mode == 4:
-                wid.setCurrentIndex(1)
-            elif index_mode == 5:
-                wid.setCurrentIndex(2)
-            else:
-                wid.setCurrentIndex(0)
+        self.sWDC.setCurrentIndex(1 if index_mode == 5 else 0)
+        if index_mode == 4:
+            self.sW2.setCurrentIndex(0)
+        elif index_mode == 5:
+            self.sW2.setCurrentIndex(1)
+        else:
+            self.sW2.setCurrentIndex(2)
 
     def select_file(self):
-        self.path = QtGui.QFileDialog.getOpenFileName(
+        #fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')[0]
+        self.path = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open file', '', "CSV Files (*.csv)")
         self.path = str(self.path)
-        self.lb_namefile.setText(os.path.split(str(self.path))[1])
+        file = str(os.path.split(str(self.path))[1])
+        self.lb_namefile.setText(file[:-23])
 
 
 class ConfigExperiment(QtWidgets.QDialog, configurechart.Ui_MainWindow):
