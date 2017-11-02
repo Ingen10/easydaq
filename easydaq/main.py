@@ -365,9 +365,9 @@ class ConfigureWave(QtWidgets.QMainWindow, configwave.Ui_mainWindow):
         #fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')[0]
         self.path = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open file', '', "CSV Files (*.csv)")
-        self.path = str(self.path)
-        file = str(os.path.split(str(self.path))[1])
-        self.lb_namefile.setText(file[:-23])
+        path = (str(self.path)).split(',')
+        self.path = path[0][2 : -2]
+        self.lb_namefile.setText(self.path.split('/')[-1])
 
 
 class ConfigExperiment(QtWidgets.QDialog, configurechart.Ui_MainWindow):
