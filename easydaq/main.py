@@ -7,7 +7,7 @@ import sys
 import glob
 import os
 import csv
-from serial import SerialException
+#from serial import SerialException
 
 import numpy as np
 import serial
@@ -43,7 +43,7 @@ def list_serial_ports():
             s = serial.Serial(port)
             s.close()
             result.append(port)
-        except (OSError, serial.SerialException):
+        except:
             pass
     return result
 
@@ -89,7 +89,7 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
             self.cfg.endArray()
         try:
             self.daq = DAQ(str(port_opendaq))
-        except SerialException:
+        except:
             port_opendaq = ''
             self.daq = ''
         try:
