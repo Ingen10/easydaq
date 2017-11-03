@@ -366,7 +366,7 @@ class ConfigureWave(QtWidgets.QMainWindow, configwave.Ui_mainWindow):
         self.path = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open file', '', "CSV Files (*.csv)")
         path = (str(self.path)).split(',')
-        self.path = path[0][2 : -2]
+        self.path = path[0][2 : -1]
         self.lb_namefile.setText(self.path.split('/')[-1])
 
 
