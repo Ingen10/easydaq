@@ -5,23 +5,22 @@ from __future__ import print_function
 
 import sys
 import glob
-import os
 import csv
-#from serial import SerialException
 
 import numpy as np
 import serial
+from serial import SerialException
 from scipy import signal
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QPalette, QIcon
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtGui import QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
-from .widgets import NavigationToolbar
-from . import easydaq
-from . import config
-from . import configurechart
-from . import configwave
+from widgets import NavigationToolbar
+import easy_daq
+import config
+import configurechart
+import configwave
 
 BUFFER_SIZE = 400
 
@@ -43,12 +42,12 @@ def list_serial_ports():
             s = serial.Serial(port)
             s.close()
             result.append(port)
-        except:
+        except SerialException:
             pass
     return result
 
 
-class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
+class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
     def __init__(self, parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.setupUi(self)
@@ -57,7 +56,7 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
         nav.setVisible(False)
         for action in nav.actions()[:-1]:
-            if action.text() != 'Subplots': 
+            if action.text() != 'Subplots':
                 self.toolBar.addAction(action)
         icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png",
                  ":/resources/customize.png", ":/resources/save.png"]
@@ -75,8 +74,7 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
             self.graphs.append(Graph(exp=0, Y=Y, X=X, rate=10, color=colors[i],
                                      button=buttons[i], combo_box=combo_boxes[i]))
 
-        port_opendaq = self.cfg.value('port')
-
+        port_opendaq = str(self.cfg.value('port'))
 
         exp_param = {"type_index": 0, "mode_index": 0,
                      "posch": 1, "negch": 0, "range_index": 0,
@@ -88,7 +86,7 @@ class MyApp(QtWidgets.QMainWindow, easydaq.Ui_MainWindow):
                 self.cfg.setValue(p, exp_param[p])
             self.cfg.endArray()
         try:
-            self.daq = DAQ(str(port_opendaq))
+            self.daq = DAQ((port_opendaq))
         except:
             port_opendaq = ''
             self.daq = ''
@@ -362,11 +360,10 @@ class ConfigureWave(QtWidgets.QMainWindow, configwave.Ui_mainWindow):
             self.sW2.setCurrentIndex(2)
 
     def select_file(self):
-        #fname = QtWidgets.QFileDialog.getSaveFileName(self, 'Export as CSV')[0]
         self.path = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open file', '', "CSV Files (*.csv)")
         path = (str(self.path)).split(',')
-        self.path = path[0][2 : -1]
+        self.path = path[0][2: -1]
         self.lb_namefile.setText(self.path.split('/')[-1])
 
 
