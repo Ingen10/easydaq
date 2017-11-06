@@ -16,11 +16,11 @@ from PyQt5.QtGui import QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 
-from widgets import NavigationToolbar
-import easy_daq
-import config
-import configurechart
-import configwave
+from .widgets import NavigationToolbar
+from . import easy_daq
+from . import config
+from . import configurechart
+from . import configwave
 
 BUFFER_SIZE = 400
 
