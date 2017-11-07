@@ -7,8 +7,6 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from .widgets import MPL_Widget
-from . import res_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -260,6 +258,8 @@ class Ui_MainWindow(object):
         self.actionStop.setText(_translate("MainWindow", "stop"))
         self.actionCSV.setText(_translate("MainWindow", "CSV"))
 
+from widgets import MPL_Widget
+import res_rc
 
 if __name__ == "__main__":
     import sys
