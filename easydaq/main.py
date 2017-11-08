@@ -10,7 +10,7 @@ import csv
 import numpy as np
 import serial
 from serial import SerialException
-from scipy import signal
+#from scipy import signal
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from opendaq import DAQ, ExpMode
@@ -170,7 +170,11 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         for p in wave_param:
             param[p] = int(self.cfg.value(p))
         self.data_size = 300
-        self.interval = int(param['period'] / (self.data_size + 1))
+        self.interval = float(param['period']) / (self.data_size + 1)
+        if self.interval > int(self.interval):
+            self.interval = int(self.interval) + 1 
+        else:
+            self.interval = int(self.interval)
         if self.interval < 1:
             self.interval = 1
         self.data_size = int(param['period'] / self.interval)
@@ -204,14 +208,33 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
     def create_square(self, risetime, period, amplitude, offset):
         duty = float(risetime) / period
         t = np.linspace(0, period, self.data_size, endpoint=False)
+        for i in range(self.data_size):
+            if t[i]/float(period) <= duty:
+                self.buffer[i] = offset + amplitude
+            else:
+                self.buffer[i] = offset
+        '''
+        duty = float(risetime) / period
+        t = np.linspace(0, period, self.data_size, endpoint=False)
         self.buffer = amplitude * \
             (signal.square((2 * np.pi * t / period), duty=duty)) + offset
+        '''
 
     def create_triangle(self, risetime, period, amplitude, offset):
         dutty = float(risetime) / period
         t = np.arange(0, period, self.interval)
+        i = 0
+        while (float(t[i]) / period) <= dutty:
+            i = i + 1
+            pass
+        self.buffer[:(i+1)] =  amplitude * (np.linspace(1, 10, (i+1))) / 10.0 + offset
+        self.buffer[(i+1):] = self.buffer[i] - (amplitude * (np.linspace(1, 10, (self.data_size - i - 1))) / 10.0 + offset)
+        print(self.buffer)
+        '''
+        dutty = float(risetime) / period
+        t = np.arange(0, period, self.interval)
         self.buffer = amplitude * (signal.sawtooth(2.0 * np.pi / period * t, dutty)) + offset
-
+        '''
     def create_fixed_potential(self, period, offset):
         self.interval = period
         self.buffer[:] = offset
