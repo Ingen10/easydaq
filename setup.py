@@ -9,7 +9,7 @@ setup(
     url='https://github.com/opendaq/easydaq',
     license='LGPL',
     author='Ingen10',
-    install_requires=['pyserial', 'numpy', 'matplotlib', 'opendaq>=0.3.2', 'scipy', 'pyqt5'],
+    install_requires=['pyserial', 'numpy', 'matplotlib', 'opendaq>=0.3.2', 'pyqt5'],
     author_email='ingen10@ingen10.com',
     description='A graphical user interface for openDAQ',
     packages=['easydaq'],
