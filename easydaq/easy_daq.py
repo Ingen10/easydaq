@@ -223,11 +223,17 @@ class Ui_MainWindow(object):
         icon3.addPixmap(QtGui.QPixmap(":/resources/CSV.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCSV.setIcon(icon3)
         self.actionCSV.setObjectName("actionCSV")
+        self.actionAxes = QtWidgets.QAction(MainWindow)
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap(":/resources/customize.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionAxes.setIcon(icon4)
+        self.actionAxes.setObjectName("actionAxes")
         self.toolBar.addAction(self.actionConfigure)
         self.toolBar.addAction(self.actionPlay)
         self.toolBar.addAction(self.actionStop)
         self.toolBar.addAction(self.actionCSV)
         self.toolBar.addSeparator()
+        self.toolBar.addAction(self.actionAxes)
 
         self.retranslateUi(MainWindow)
         self.cBenable1.clicked['bool'].connect(self.Bconfigure1.setEnabled)
@@ -257,6 +263,7 @@ class Ui_MainWindow(object):
         self.actionPlay.setText(_translate("MainWindow", "play"))
         self.actionStop.setText(_translate("MainWindow", "stop"))
         self.actionCSV.setText(_translate("MainWindow", "CSV"))
+        self.actionAxes.setText(_translate("MainWindow", "Axes"))
 
 from .widgets import MPL_Widget
 from . import res_rc

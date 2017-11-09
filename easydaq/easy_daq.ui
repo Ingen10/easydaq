@@ -414,6 +414,7 @@
    <addaction name="actionStop"/>
    <addaction name="actionCSV"/>
    <addaction name="separator"/>
+   <addaction name="actionAxes"/>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="sizePolicy">
@@ -469,6 +470,15 @@
    </property>
    <property name="text">
     <string>CSV</string>
+   </property>
+  </action>
+  <action name="actionAxes">
+   <property name="icon">
+    <iconset resource="res.qrc">
+     <normaloff>:/resources/customize.png</normaloff>:/resources/customize.png</iconset>
+   </property>
+   <property name="text">
+    <string>Axes</string>
    </property>
   </action>
  </widget>

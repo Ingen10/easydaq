@@ -17,11 +17,12 @@ from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 from opendaq.common import LengthError
 
-from .widgets import NavigationToolbar
+from .widgets import NavigationToolbar, MyMplCanvas
 from . import easy_daq
 from . import config
 from . import configurechart
 from . import configwave
+from . import axes_op
 
 BUFFER_SIZE = 400
 
@@ -55,13 +56,12 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.cfg = QtCore.QSettings('opendaq')
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
+        print(self.plotWidget.canvas)
         nav.setVisible(False)
         for action in nav.actions()[:-1]:
-            if action.text() != 'Subplots':
-                self.toolBar.addAction(action)
-        icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png",
-                 ":/resources/customize.png", ":/resources/save.png"]
-        for i, action in enumerate(self.toolBar.actions()[5:10]):
+            self.toolBar.addAction(action)
+        icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png", ":/resources/save.png"]
+        for i, action in enumerate(self.toolBar.actions()[6:10]):
             action.setIcon(QIcon(icons[i]))
         #  Graphs
         Y, X = [np.zeros(BUFFER_SIZE)] * 2
@@ -109,6 +109,7 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.actionStop.triggered.connect(self.stop)
         self.actionCSV.triggered.connect(self.export_csv)
         self.actionConfigure.triggered.connect(self.get_port)
+        self.actionAxes.triggered.connect(self.change_axes)
         self.graphs[0].button.clicked.connect(lambda: self.configure_experiment(0))
         self.graphs[1].button.clicked.connect(lambda: self.configure_experiment(1))
         self.graphs[2].button.clicked.connect(lambda: self.configure_experiment(2))
@@ -228,12 +229,12 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
             pass
         self.buffer[:(i+1)] =  amplitude * (np.linspace(1, 10, (i+1))) / 10.0 + offset
         self.buffer[(i+1):] = self.buffer[i] - (amplitude * (np.linspace(1, 10, (self.data_size - i - 1))) / 10.0 + offset)
-        print(self.buffer)
         '''
         dutty = float(risetime) / period
         t = np.arange(0, period, self.interval)
         self.buffer = amplitude * (signal.sawtooth(2.0 * np.pi / period * t, dutty)) + offset
         '''
+
     def create_fixed_potential(self, period, offset):
         self.interval = period
         self.buffer[:] = offset
@@ -326,6 +327,11 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         exp = [self.dlg1, self.dlg2, self.dlg3]
         exp[i].daq = self.daq
         exp[i].show()
+
+    def change_axes(self):
+        print(self.plotWidget)
+        dlg = AxesConfiguration(self.plotWidget)
+        dlg.exec_()
 
     def get_port(self):
         dlg = Configuration(self)
@@ -452,6 +458,31 @@ class Configuration(QtWidgets.QDialog, config.Ui_MainWindow):
         port = self.cbport.currentText()
         self.close()
         return port
+
+class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
+    def __init__(self, plot, parent=None):
+        super(AxesConfiguration, self).__init__(parent)
+        self.setupUi(self)
+        self.plt = plot
+        self.ax_Bok.clicked.connect(self.config_axes)
+
+    def config_axes(self):
+        print(self.plt)
+        parameters = [self.ax_title, self.ax_left, self.ax_right, self.ax_xlb, self.ax_bottom,
+                      self.ax_top, self.ax_ylb, self.ax_xscale, self.ax_yscale]
+        print(self.ax_xlb.text(), self.ax_ylb.text())
+        self.plt.canvas.ax.set_xlabel(self.ax_xlb.text(), fontsize=10)
+        self.plt.canvas.ax.set_ylabel(self.ax_ylb.text(), fontsize=10)
+        self.plt.show()
+        '''
+        self.canvas.ax.set_title('')
+        self.canvas.ax.set_xscale()
+        self.canvas.ax.set_yscale()
+        self.canvas.ax.get_xscale()
+        self.canvas.ax.get_yscale()
+        '''
+        self.close()
+        #return(returns)
 
 
 class Graph(object):
