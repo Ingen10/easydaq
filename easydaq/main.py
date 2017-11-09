@@ -15,6 +15,7 @@ from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtGui import QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
+from opendaq.common import LengthError
 
 from .widgets import NavigationToolbar
 from . import easy_daq
@@ -74,8 +75,6 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
             self.graphs.append(Graph(exp=0, Y=Y, X=X, rate=10, color=colors[i],
                                      button=buttons[i], combo_box=combo_boxes[i]))
 
-        port_opendaq = str(self.cfg.value('port'))
-
         exp_param = {"type_index": 0, "mode_index": 0,
                      "posch": 1, "negch": 0, "range_index": 0,
                      "samples": 200, "rate": 10}
@@ -85,16 +84,16 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
                 self.cfg.setArrayIndex(exp)
                 self.cfg.setValue(p, exp_param[p])
             self.cfg.endArray()
+
+        port_opendaq = str(self.cfg.value('port'))
         try:
             self.daq = DAQ((port_opendaq))
-        except:
+        except (LengthError, SerialException):
             port_opendaq = ''
             self.daq = ''
-        try:
+        if port_opendaq:
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
                 self.daq.hw_ver[1], self.daq.fw_ver))
-        except AttributeError:
-            pass
         for g in self.graphs:
             g.combo_box.setEnabled(bool(port_opendaq))
         for p in [self.actionPlay, self.cBenable4]:
@@ -332,9 +331,12 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         dlg = Configuration(self)
         dlg.exec_()
         port_opendaq = dlg.return_port()
-        if port_opendaq != '':
-            self.cfg.setValue('port', port_opendaq)
+        try:
             self.daq = DAQ(str(port_opendaq))
+        except (LengthError, SerialException):
+            port_opendaq = ''
+        if port_opendaq:
+            self.cfg.setValue('port', port_opendaq)
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
                 self.daq.hw_ver[1], self.daq.fw_ver))
             for exp, d in enumerate([self.dlg1, self.dlg2, self.dlg3]):
