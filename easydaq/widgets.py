@@ -7,7 +7,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5 import NavigationToolbar2QT
 from matplotlib.figure import Figure
 
-warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
+#warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 
 class MyMplCanvas(FigureCanvas):
     def __init__(self, parent=None):

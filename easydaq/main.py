@@ -56,7 +56,6 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.cfg = QtCore.QSettings('opendaq')
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
-        print(self.plotWidget.canvas)
         nav.setVisible(False)
         for action in nav.actions()[:-1]:
             self.toolBar.addAction(action)
@@ -329,9 +328,10 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         exp[i].show()
 
     def change_axes(self):
-        print(self.plotWidget)
-        dlg = AxesConfiguration(self.plotWidget)
-        dlg.exec_()
+        dlg_axes = AxesConfiguration(self.plotWidget)
+        dlg_axes.exec_()
+        print(self.graphs[0].X)
+        print(self.graphs[0].Y)
 
     def get_port(self):
         dlg = Configuration(self)
@@ -461,26 +461,38 @@ class Configuration(QtWidgets.QDialog, config.Ui_MainWindow):
 
 class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
     def __init__(self, plot, parent=None):
+        print('1')
         super(AxesConfiguration, self).__init__(parent)
         self.setupUi(self)
         self.plt = plot
+        self.configure_widgets()
         self.ax_Bok.clicked.connect(self.config_axes)
 
+    def configure_widgets(self):
+        print('????')
+        self.ax_title.setText(self.plt.canvas.ax.get_title())
+        self.ax_xlb.setText(self.plt.canvas.ax.get_xlabel())
+        self.ax_ylb.setText(self.plt.canvas.ax.get_ylabel())
+        x_limits = self.plt.canvas.ax.get_xlim()
+        print(x_limits)
+        self.ax_left.setText(str(x_limits[0] / 100.0))
+        self.ax_right.setText(str(x_limits[1] / 100.0))
+        y_limits = self.plt.canvas.ax.get_ylim()
+        print(y_limits)
+        self.ax_bottom.setText(str(y_limits[0]))
+        self.ax_top.setText(str(y_limits[1]))
+
     def config_axes(self):
-        print(self.plt)
-        parameters = [self.ax_title, self.ax_left, self.ax_right, self.ax_xlb, self.ax_bottom,
-                      self.ax_top, self.ax_ylb, self.ax_xscale, self.ax_yscale]
         print(self.ax_xlb.text(), self.ax_ylb.text())
+        self.plt.canvas.ax.set_autoscaley_on(False)
+        self.plt.canvas.ax.set_autoscalex_on(False)
         self.plt.canvas.ax.set_xlabel(self.ax_xlb.text(), fontsize=10)
         self.plt.canvas.ax.set_ylabel(self.ax_ylb.text(), fontsize=10)
-        self.plt.show()
-        '''
-        self.canvas.ax.set_title('')
-        self.canvas.ax.set_xscale()
-        self.canvas.ax.set_yscale()
-        self.canvas.ax.get_xscale()
-        self.canvas.ax.get_yscale()
-        '''
+        self.plt.canvas.ax.set_title(self.ax_title.text())
+        self.plt.canvas.ax.set_xlim(float(self.ax_left.text()), float(self.ax_right.text()))
+        self.plt.canvas.ax.set_ylim(float(self.ax_bottom.text()), float(self.ax_top.text()))
+        scale_options = ['linear', 'log', 'logit']
+        self.plt.canvas.draw()
         self.close()
         #return(returns)
 
