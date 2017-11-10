@@ -461,7 +461,6 @@ class Configuration(QtWidgets.QDialog, config.Ui_MainWindow):
 
 class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
     def __init__(self, plot, parent=None):
-        print('1')
         super(AxesConfiguration, self).__init__(parent)
         self.setupUi(self)
         self.plt = plot
@@ -469,21 +468,17 @@ class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
         self.ax_Bok.clicked.connect(self.config_axes)
 
     def configure_widgets(self):
-        print('????')
         self.ax_title.setText(self.plt.canvas.ax.get_title())
         self.ax_xlb.setText(self.plt.canvas.ax.get_xlabel())
         self.ax_ylb.setText(self.plt.canvas.ax.get_ylabel())
         x_limits = self.plt.canvas.ax.get_xlim()
-        print(x_limits)
         self.ax_left.setText(str(x_limits[0] / 100.0))
         self.ax_right.setText(str(x_limits[1] / 100.0))
         y_limits = self.plt.canvas.ax.get_ylim()
-        print(y_limits)
         self.ax_bottom.setText(str(y_limits[0]))
         self.ax_top.setText(str(y_limits[1]))
 
     def config_axes(self):
-        print(self.ax_xlb.text(), self.ax_ylb.text())
         self.plt.canvas.ax.set_autoscaley_on(False)
         self.plt.canvas.ax.set_autoscalex_on(False)
         self.plt.canvas.ax.set_xlabel(self.ax_xlb.text(), fontsize=10)
