@@ -61,7 +61,6 @@ class Ui_MainWindow(object):
         self.ax_xscale.setObjectName("ax_xscale")
         self.ax_xscale.addItem("")
         self.ax_xscale.addItem("")
-        self.ax_xscale.addItem("")
         self.formLayout_2.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.ax_xscale)
         self.verticalLayout.addLayout(self.formLayout_2)
         self.formLayout_3 = QtWidgets.QFormLayout()
@@ -99,7 +98,6 @@ class Ui_MainWindow(object):
         self.ax_yscale.setObjectName("ax_yscale")
         self.ax_yscale.addItem("")
         self.ax_yscale.addItem("")
-        self.ax_yscale.addItem("")
         self.formLayout_3.setWidget(4, QtWidgets.QFormLayout.FieldRole, self.ax_yscale)
         self.verticalLayout.addLayout(self.formLayout_3)
         spacerItem = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
@@ -129,7 +127,6 @@ class Ui_MainWindow(object):
         self.label_2.setText(_translate("MainWindow", "X-Axis"))
         self.ax_xscale.setItemText(0, _translate("MainWindow", "linear"))
         self.ax_xscale.setItemText(1, _translate("MainWindow", "log"))
-        self.ax_xscale.setItemText(2, _translate("MainWindow", "logit"))
         self.label_7.setText(_translate("MainWindow", "Bottom"))
         self.label_8.setText(_translate("MainWindow", "Top"))
         self.label_9.setText(_translate("MainWindow", "Label"))
@@ -137,7 +134,6 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "Y-Axis"))
         self.ax_yscale.setItemText(0, _translate("MainWindow", "linear"))
         self.ax_yscale.setItemText(1, _translate("MainWindow", "log"))
-        self.ax_yscale.setItemText(2, _translate("MainWindow", "logit"))
         self.ax_Bok.setText(_translate("MainWindow", "OK"))
 
 

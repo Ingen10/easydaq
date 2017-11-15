@@ -16,6 +16,7 @@ from PyQt5.QtGui import QIcon
 from opendaq import DAQ, ExpMode
 from opendaq.models import DAQModel
 from opendaq.common import LengthError
+import matplotlib
 
 from .widgets import NavigationToolbar, MyMplCanvas
 from . import easy_daq
@@ -55,8 +56,9 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.setupUi(self)
         self.cfg = QtCore.QSettings('opendaq')
         #  Toolbar
-        nav = NavigationToolbar(self.plotWidget.canvas, self.plotWidget.canvas)
+        nav = NavigationToolbar(self.plotWidget.canvas, self)
         nav.setVisible(False)
+        self.plotWidget.canvas.ax.set_navigate_mode(True)
         for action in nav.actions()[:-1]:
             self.toolBar.addAction(action)
         icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png", ":/resources/save.png"]
@@ -102,6 +104,8 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.dlg2 = ConfigExperiment(self.daq, self.cfg, 1)
         self.dlg3 = ConfigExperiment(self.daq, self.cfg, 2)
         self.dlg4 = ConfigureWave(self.cfg)
+        #  Axes configuration window
+        self.dlg_axes = AxesConfiguration(self.plotWidget)
 
         self.Bconfigure4.clicked.connect(self.configure_wave)
         self.actionPlay.triggered.connect(self.play)
@@ -114,6 +118,11 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.graphs[2].button.clicked.connect(lambda: self.configure_experiment(2))
 
     def stop(self):
+        self.dlg_axes.configure_widgets()
+        actions_names = ['Axes', 'Home', 'Pan', 'Zoom', 'Save']
+        for action in self.toolBar.actions():
+            if action.text() in actions_names:
+                action.setEnabled(True)
         self.daq.stop()
         for g in self.graphs:
             g.combo_box.setEnabled(True)
@@ -129,6 +138,10 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
 
     def play(self):
         self.actionStop.setEnabled(True)
+        actions_names = ['Axes', 'Home', 'Pan', 'Zoom', 'Save']
+        for action in self.toolBar.actions():
+            if action.text() in actions_names:
+                action.setEnabled(False)
         for g in self.graphs:
             g.combo_box.setEnabled(False)
             g.button.setEnabled(False)
@@ -328,10 +341,7 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         exp[i].show()
 
     def change_axes(self):
-        dlg_axes = AxesConfiguration(self.plotWidget)
-        dlg_axes.exec_()
-        print(self.graphs[0].X)
-        print(self.graphs[0].Y)
+        self.dlg_axes.show()
 
     def get_port(self):
         dlg = Configuration(self)
@@ -467,16 +477,15 @@ class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
         self.configure_widgets()
         self.ax_Bok.clicked.connect(self.config_axes)
 
+
     def configure_widgets(self):
-        self.ax_title.setText(self.plt.canvas.ax.get_title())
-        self.ax_xlb.setText(self.plt.canvas.ax.get_xlabel())
-        self.ax_ylb.setText(self.plt.canvas.ax.get_ylabel())
         x_limits = self.plt.canvas.ax.get_xlim()
-        self.ax_left.setText(str(x_limits[0] / 100.0))
-        self.ax_right.setText(str(x_limits[1] / 100.0))
+        self.ax_left.setText(str(x_limits[0]))
+        self.ax_right.setText(str(x_limits[1]))
         y_limits = self.plt.canvas.ax.get_ylim()
         self.ax_bottom.setText(str(y_limits[0]))
         self.ax_top.setText(str(y_limits[1]))
+
 
     def config_axes(self):
         self.plt.canvas.ax.set_autoscaley_on(False)
@@ -487,9 +496,15 @@ class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
         self.plt.canvas.ax.set_xlim(float(self.ax_left.text()), float(self.ax_right.text()))
         self.plt.canvas.ax.set_ylim(float(self.ax_bottom.text()), float(self.ax_top.text()))
         scale_options = ['linear', 'log', 'logit']
+        self.plt.canvas.ax.set_xscale(scale_options[self.ax_xscale.currentIndex()])
+        self.plt.canvas.ax.set_yscale(scale_options[self.ax_yscale.currentIndex()])
         self.plt.canvas.draw()
-        self.close()
-        #return(returns)
+        self.plt.show()
+        self.hide()
+
+    def closeEvent(self, evnt):
+        evnt.ignore()
+        self.hide()
 
 
 class Graph(object):

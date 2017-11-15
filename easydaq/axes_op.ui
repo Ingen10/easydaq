@@ -106,11 +106,6 @@
            <string>log</string>
           </property>
          </item>
-         <item>
-          <property name="text">
-           <string>logit</string>
-          </property>
-         </item>
         </widget>
        </item>
       </layout>
@@ -183,11 +178,6 @@
          <item>
           <property name="text">
            <string>log</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>logit</string>
           </property>
          </item>
         </widget>
