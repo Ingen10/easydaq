@@ -181,6 +181,9 @@
            <property name="decimals">
             <number>3</number>
            </property>
+           <property name="minimum">
+            <double>-4.000000000000000</double>
+           </property>
            <property name="maximum">
             <double>4.000000000000000</double>
            </property>
@@ -194,8 +197,6 @@
          </item>
         </layout>
        </widget>
-       <zorder>layoutWidget</zorder>
-       <zorder>sW2</zorder>
       </widget>
       <widget class="QWidget" name="page2">
        <widget class="QWidget" name="layoutWidget">
