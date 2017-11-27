@@ -58,7 +58,6 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         #  Toolbar
         nav = NavigationToolbar(self.plotWidget.canvas, self)
         nav.setVisible(False)
-        self.plotWidget.canvas.ax.set_navigate_mode(True)
         for action in nav.actions()[:-1]:
             self.toolBar.addAction(action)
         icons = [":/resources/house.png", ":/resources/pan.png", ":/resources/zoom.png", ":/resources/save.png"]
@@ -113,9 +112,16 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         self.actionCSV.triggered.connect(self.export_csv)
         self.actionConfigure.triggered.connect(self.get_port)
         self.actionAxes.triggered.connect(self.change_axes)
-        self.graphs[0].button.clicked.connect(lambda: self.configure_experiment(0))
-        self.graphs[1].button.clicked.connect(lambda: self.configure_experiment(1))
-        self.graphs[2].button.clicked.connect(lambda: self.configure_experiment(2))
+        for index, graph in enumerate(self.graphs):
+            graph.button.clicked.connect(lambda checked, index=index: self.configure_experiment(index))
+        for index, action in enumerate(self.toolBar.actions()):
+            action.triggered.connect(lambda checked, index=index: self.action(index))
+
+    def action(self, index):
+        if index > 5:
+            self.plotWidget.canvas.ax.clear()
+            self.plotWidget.canvas.ax.grid(True)
+            self.plotWidget.canvas.draw()
 
     def stop(self):
         self.dlg_axes.configure_widgets()
@@ -127,7 +133,8 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
         for g in self.graphs:
             g.combo_box.setEnabled(True)
             g.button.setEnabled(g.combo_box.isChecked())
-            self.plotWidget.canvas.ax.plot(g.Y, color=g.color, linewidth=0.7)
+            if g.exp and g.exp.get_mode() == ExpMode.ANALOG_IN:
+                self.plotWidget.canvas.ax.plot(g.Y, color=g.color, linewidth=0.7)
         self.daq.flush()
         self.daq.clear_experiments()
         self.actionPlay.toggle()
@@ -305,8 +312,8 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
             self.daq.start()
             self.plot()
             timer = QtCore.QTimer()
-            timer.timeout.connect(self.update)
-            timer.start(0.01)
+            #timer.timeout.connect(self.update)
+            #timer.start(0.01)
             QtCore.QTimer.singleShot(10, self.update)
 
     def plot(self):
@@ -331,6 +338,7 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
                     g.X, g.Y, g.color, linewidth=0.7)
                 self.plotWidget.canvas.ax.grid(True)
                 self.plotWidget.canvas.draw()
+                
 
     def configure_wave(self):
         self.dlg4.show()
@@ -356,11 +364,15 @@ class MyApp(QtWidgets.QMainWindow, easy_daq.Ui_MainWindow):
             self.statusBar.showMessage("Hardware Version: %s   Firmware Version: %s" % (
                 self.daq.hw_ver[1], self.daq.fw_ver))
             for exp, d in enumerate([self.dlg1, self.dlg2, self.dlg3]):
-                d.get_cb_values(self.cfg, exp, self.daq)
+                d.get_cb_values(self.daq)
         else:
             self.statusBar.showMessage("")
         for g in self.graphs:
             g.combo_box.setEnabled(bool(port_opendaq))
+        if port_opendaq:
+            g.button.setEnabled(bool(g.combo_box.isChecked()))
+        else:
+            g.button.setEnabled(False)  
         for p in [self.cBenable4, self.actionPlay]:
             p.setEnabled(bool(port_opendaq))
 
@@ -416,7 +428,7 @@ class ConfigExperiment(QtWidgets.QDialog, configurechart.Ui_MainWindow):
                       'A4', 'A5', 'A6', 'A7', 'A8', 'VREF']
         self.setupUi(self)
         if daq:
-            self.get_cb_values(cfg, exp, daq)
+            self.get_cb_values(daq)
         self.pBconfirm.clicked.connect(lambda: self.update_conf(cfg, exp))
         self.cBtype.currentIndexChanged.connect(self.status_period)
 
@@ -437,7 +449,9 @@ class ConfigExperiment(QtWidgets.QDialog, configurechart.Ui_MainWindow):
             cfg.endArray()
         self.hide()
 
-    def get_cb_values(self, cfg, exp, daq):
+    def get_cb_values(self, daq):
+        for w in [self.cBnegchannel, self.cBposchannel, self.cBrange]:
+            w.clear()
         model = DAQModel.new(*daq.get_info())
         for ninput in model.adc.ninputs:
             self.cBnegchannel.addItem(
@@ -488,18 +502,17 @@ class AxesConfiguration(QtWidgets.QDialog, axes_op.Ui_MainWindow):
 
 
     def config_axes(self):
-        self.plt.canvas.ax.set_autoscaley_on(False)
-        self.plt.canvas.ax.set_autoscalex_on(False)
         self.plt.canvas.ax.set_xlabel(self.ax_xlb.text(), fontsize=10)
         self.plt.canvas.ax.set_ylabel(self.ax_ylb.text(), fontsize=10)
         self.plt.canvas.ax.set_title(self.ax_title.text())
-        self.plt.canvas.ax.set_xlim(float(self.ax_left.text()), float(self.ax_right.text()))
-        self.plt.canvas.ax.set_ylim(float(self.ax_bottom.text()), float(self.ax_top.text()))
         scale_options = ['linear', 'log', 'logit']
         self.plt.canvas.ax.set_xscale(scale_options[self.ax_xscale.currentIndex()])
         self.plt.canvas.ax.set_yscale(scale_options[self.ax_yscale.currentIndex()])
+        
+        a, b = self.plt.canvas.ax.set_xlim(left=float(self.ax_left.text()), right=float(self.ax_right.text()), auto=False)
+        self.plt.canvas.ax.set_ylim(float(self.ax_bottom.text()), float(self.ax_top.text()))
         self.plt.canvas.draw()
-        self.plt.show()
+        #self.plt.show()
         self.hide()
 
     def closeEvent(self, evnt):

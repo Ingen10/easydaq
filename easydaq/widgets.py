@@ -1,5 +1,6 @@
 import warnings
 import matplotlib
+matplotlib.use('Qt5Agg')
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
@@ -15,6 +16,7 @@ class MyMplCanvas(FigureCanvas):
         self.ax = self.fig.add_subplot(111)
         self.fig.subplots_adjust(left=0.15, bottom=0.15, right=0.9, top=0.9)
         self.ax.grid(True)
+        self.ax.autoscale(False)
         FigureCanvas.__init__(self, self.fig)
 
 
@@ -22,10 +24,8 @@ class MPL_Widget(QWidget):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
         self.canvas = MyMplCanvas()
-        #self.toolbar = NavigationToolbar(self.canvas, self.canvas)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.canvas)
-        #self.vbox.addWidget(self.toolbar)
         self.setLayout(self.vbox)
 
 
