@@ -23,7 +23,7 @@ system-wide.
 EasyDAQ demo will require to install **matplotlib** and **PyQt5** packages. To install them:
 
 ```sh
-    $ pip3 install matplotlib
+    $ pip3 install matplotlib==2.2.5
     $ pip3 install pyqt5
 ```
 
