@@ -23,8 +23,8 @@ system-wide.
 EasyDAQ demo will require to install **matplotlib** and **PyQt5** packages. To install them:
 
 ```sh
-    pip3 install matplotlib==2.2.5
-    pip3 install pyqt5
+pip3 install matplotlib==2.2.5
+pip3 install pyqt5
 ```
 
 **EasyDAQ**
@@ -32,14 +32,14 @@ EasyDAQ demo will require to install **matplotlib** and **PyQt5** packages. To i
 To install the last stable version:
 
 ```sh
-    pip3 install easydaq
+pip3 install easydaq
 ```
 
 To install the development version (it is highly recommended to use a
 [virtual environment](https://virtualenv.pypa.io/en/stable/) for this):
 
 ```sh
-    git clone https://github.com/openDAQ/easydaq.git
-    cd easydaq
-    python setup.py install
+git clone https://github.com/openDAQ/easydaq.git
+cd easydaq
+python setup.py install
 ```
