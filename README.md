@@ -17,9 +17,6 @@ For support, e-mail to support@open-daq.com
 
 ## Installation
 
-
-## Installation
-
 It is highly recommended to install this package in a virtual Python environment using
 [virtualenv](https://virtualenv.pypa.io/en/stable/) or a similar tool.
 
