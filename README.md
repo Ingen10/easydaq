@@ -14,32 +14,17 @@ Several demos and examples are provided in website's support page.
 
 Please, go to http://www.open-daq.com for additional info.
 For support, e-mail to support@open-daq.com
-* * *
+
 ## Installation
 
-You will need **administrator rights** (root access) to install this package
-system-wide.
 
-EasyDAQ demo will require to install **matplotlib** and **PyQt5** packages. To install them:
+## Installation
 
-```sh
-pip3 install matplotlib==2.2.5
-pip3 install pyqt5
-```
-
-**EasyDAQ**
-
-To install the last stable version:
+It is highly recommended to install this package in a virtual Python environment using
+[virtualenv](https://virtualenv.pypa.io/en/stable/) or a similar tool.
 
 ```sh
-pip3 install easydaq
-```
-
-To install the development version (it is highly recommended to use a
-[virtual environment](https://virtualenv.pypa.io/en/stable/) for this):
-
-```sh
-git clone https://github.com/openDAQ/easydaq.git
-cd easydaq
+git clone https://github.com/openDAQ/easydaq.git && cd easydaq
+pip3 install matplotlib==2.2.5 pyqt5
 python setup.py install
 ```
